@@ -63,6 +63,7 @@ func TestScannerForNames(t *testing.T) {
 		"schema.sql", "sql",
 		"site.css", "css",
 		"script.js", "javascript", "ts",
+		"tsconfig.json", "jsonc",
 		"README.md", "markdown",
 		"show.hml", "haml",
 	} {

@@ -62,6 +62,8 @@ func scannerFor(name string) scanFunc {
 		// TypeScript is JavaScript plus type annotations, which are
 		// names and punctuation either way.
 		return scanJS
+	case "json", "jsonc":
+		return scanJSON
 	case "md", "markdown":
 		return scanMarkdown
 	case "hml", "haml":

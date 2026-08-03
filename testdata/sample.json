@@ -1,0 +1,23 @@
+{
+  "extends": "@tsconfig/recommended/tsconfig.json",
+  "name": "eds",
+  "private": "true",
+  "compilerOptions": {
+    "jsx": "react",
+    "target": "ES2020", // a line comment, which JSON does not have
+    "strict": true,
+    "stableTypeOrdering": true,
+    /* A block comment, which it does not have either, spanning
+       two lines and closing beside a value: */ "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "numbers": [0, -5, 1.5, 1.5e-3, 1e10],
+  "words": [true, false, null],
+  "escapes": "a \"quoted\" word, a backslash \\, a tab \t",
+  "url": "https://github.com/croaky/highlight",
+  "unicode": "ünïcödé and an emoji 🎉",
+  "empty": {},
+  "nothing": []
+}
