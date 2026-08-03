@@ -45,18 +45,25 @@ func TestCodeByLanguage(t *testing.T) {
 }
 
 // TestCodeEscapes checks that source cannot become markup, in the
-// colored path and in the uncolored one.
+// colored path and in the uncolored one. HTML is the source that has to
+// survive being read as the language the output is written in: the tag
+// is escaped and then colored, so the class span is ours and the
+// brackets around it are the reader's text.
 func TestCodeEscapes(t *testing.T) {
-	for _, name := range []string{"index.html", "main.go"} {
+	for _, tt := range []struct{ name, want string }{
+		{name: "index.html", want: "&lt;<span class=k>script</span>&gt;"},
+		{name: "main.go", want: "&lt;script&gt;"},
+		{name: "notes.unknownext", want: "&lt;script&gt;"},
+	} {
 		var got strings.Builder
-		if err := Code(&got, name, "<script>alert(1)</script>"); err != nil {
+		if err := Code(&got, tt.name, "<script>alert(1)</script>"); err != nil {
 			t.Fatal(err)
 		}
 		if strings.Contains(got.String(), "<script>") {
-			t.Errorf("Code(%q) passed a script tag through: %s", name, got.String())
+			t.Errorf("Code(%q) passed a script tag through: %s", tt.name, got.String())
 		}
-		if !strings.Contains(got.String(), "&lt;script&gt;") {
-			t.Errorf("Code(%q) did not escape a script tag: %s", name, got.String())
+		if !strings.Contains(got.String(), tt.want) {
+			t.Errorf("Code(%q) missing %q\nin: %s", tt.name, tt.want, got.String())
 		}
 	}
 }

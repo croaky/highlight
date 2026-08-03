@@ -27,6 +27,7 @@ const (
 	stateSingleQuote
 	stateDoubleQuote
 	stateFence
+	stateTag
 )
 
 // scanFunc tokenizes one line, given the state the previous line
@@ -64,6 +65,8 @@ func scannerFor(name string) scanFunc {
 		return scanJS
 	case "json", "jsonc":
 		return scanJSON
+	case "html", "htm":
+		return scanHTML
 	case "lua":
 		return scanLua
 	case "md", "markdown":
