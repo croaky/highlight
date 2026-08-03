@@ -64,6 +64,8 @@ func scannerFor(name string) scanFunc {
 		return scanJS
 	case "json", "jsonc":
 		return scanJSON
+	case "lua":
+		return scanLua
 	case "md", "markdown":
 		return scanMarkdown
 	case "hml", "haml":
