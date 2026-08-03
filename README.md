@@ -1,8 +1,8 @@
 # highlight
 
 A small syntax highlighter for server-rendered HTML. One hand-written,
-line-oriented scanner per language over a shared token type: Go, sh,
-SQL, CSS, JavaScript, JSON, Lua, HTML, Markdown, and hml.
+line-oriented scanner per language over a shared token type: Go, Ruby,
+sh, SQL, CSS, JavaScript, JSON, Lua, HTML, Markdown, and hml.
 
 ```go
 highlight.Code(w, "main.go", src)   // or "go", from a markdown fence

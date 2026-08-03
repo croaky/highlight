@@ -66,6 +66,7 @@ func TestScannerForNames(t *testing.T) {
 		"tsconfig.json", "jsonc",
 		"index.html", "html",
 		"init.lua", "lua",
+		"person.rb", "ruby",
 		"README.md", "markdown",
 		"show.hml", "haml",
 	} {

@@ -28,6 +28,9 @@ const (
 	stateDoubleQuote
 	stateFence
 	stateTag
+	// Last, because Ruby's heredocs take the values above it: one
+	// per terminator a carry can name. See heredocTags.
+	stateHeredoc
 )
 
 // scanFunc tokenizes one line, given the state the previous line
@@ -69,6 +72,8 @@ func scannerFor(name string) scanFunc {
 		return scanHTML
 	case "lua":
 		return scanLua
+	case "rb", "ruby":
+		return scanRuby
 	case "md", "markdown":
 		return scanMarkdown
 	case "hml", "haml":
