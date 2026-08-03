@@ -1,0 +1,16 @@
+-# Why this page exists.
+%div.change-side#status
+  - if change.title != ""
+    %h1= change.title
+  - else
+    %h1 Untitled
+  %p pushed by #{change.author} today
+  = markdown(change.body)
+  %table
+    - for i, job in jobs
+      %tr
+        %td= job.name
+        %td{class: job.state}= i
+  = render "check", n: 3
+  :javascript
+    const a = 1;

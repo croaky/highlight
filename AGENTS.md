@@ -1,0 +1,61 @@
+# Agents guide
+
+highlight colors source code for server-rendered HTML. See `README.md`
+for why it exists and `doc.go` for the scope and the class names.
+
+## Architecture
+
+One package at the repo root, standard library only. Two layers, and the
+split is the design:
+
+- `token.go` — the token type, the carry state, the `scanFunc`
+  signature, the shared byte helpers, and `scannerFor`. Knows nothing
+  about output.
+- `scan_*.go` — one scanner per language, one file each. A scanner reads
+  a line and emits tokens; it never writes markup. The suffix is spelled
+  out when the short name is a GOOS or GOARCH: `scan_javascript.go`,
+  because Go would build `scan_js.go` only for js/wasm.
+- `html.go` — the exported surface, `Code` and `Diff`, and the escaping.
+  HTML is one consumer, not the interface: another emitter is a new file
+  here and no change to any scanner.
+
+## Checks
+
+The root `Checkfile` is the list, and CI runs it on every push. Run the
+same things before committing:
+
+```sh
+goimports -local "$(go list -m)" -w .
+go vet ./...
+go test -race -cover ./...
+git ls-files -z '*.go' | xargs -0 gopls check -severity=hint
+```
+
+Nothing outside the standard library is imported. Taking a dependency is
+a design decision, not a step.
+
+## Tests
+
+A scanner's test is a table of one line each, in and out states
+included, since the carry is what the design is for. `token_test.go`
+scans `testdata/sample.*` and checks the tokens still spell the file: a
+scanner that drops or repeats a byte shows a reader a line nobody wrote.
+
+A new language is a `scan_*.go`, a case in `scannerFor`, a table test,
+and a `testdata/sample.*` that exercises whatever it carries.
+
+Incompleteness is allowed and does not need a test. Wrong color does.
+
+## Commits
+
+- Prefix with what the change acts on: the language (`go:`, `css:`,
+  `sql:`), or the layer (`token:`, `html:`, `doc:`, `todo:`, `ci:`).
+  Not `highlight:` — every commit here is highlight.
+- Imperative mood, lowercase except proper nouns. Hard-wrap at 72.
+- Include _why_, not just _what_. See `git log` for examples.
+- Sign your work with a `Co-Authored-By` trailer.
+
+## Releases
+
+cibot is origin and holds no tags. `scripts/tag vX.Y.Z` publishes one
+annotated tag to the GitHub mirror, which is what a `go get` resolves.

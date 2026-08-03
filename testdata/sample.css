@@ -1,0 +1,37 @@
+/* A comment that spans lines, since that is the one thing
+   the CSS scanner has to carry. */
+:root {
+	--side-w: 320px;
+	--fg: #24292f;
+}
+
+.page-text {
+	margin: 0.7em 0.5em 1em;
+	font-family: monospace;
+	top: calc(var(--side-w) - 1px);
+}
+
+.diff-file > summary:hover::after {
+	background: #f6f8fa;
+	content: "x";
+}
+
+.diff-file > summary::-webkit-details-marker {
+	display: none;
+}
+
+#checkout-cmd {
+	color: #fff;
+	margin: -1px 0 .5em;
+}
+
+button,
+input[type=submit] {
+	-webkit-user-select: all;
+}
+
+@media (min-width: 800px) {
+	.page-text {
+		margin: 0;
+	}
+}
