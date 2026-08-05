@@ -1,23 +1,22 @@
 # highlight
 
-A small syntax highlighter for server-rendered HTML. One hand-written,
-line-oriented scanner per language over a shared token type: Go, C,
-Ruby, sh, SQL, CSS, JavaScript, JSON, Lua, HTML, Markdown, and hml.
+A small syntax highlighter for server-rendered HTML. One line-oriented scanner
+per language: Go, SQL, CSS, JavaScript, C, Ruby, JSON, Lua, HTML, Markdown,
+shell, and [hml](https://github.com/croaky/hml).
 
 ```go
 highlight.Code(w, "main.go", src)   // or "go", from a markdown fence
 highlight.Diff("main.go", patch)    // a unified-diff patch
 ```
 
-Five classes come out — `k` keywords, `n` names, `s` strings, `m`
-numbers, `c` comments — plus four for a diff's rows: `gi` inserted,
-`gd` deleted, `gu` hunk header, `gc` context. Colors are yours; those
-nine names are the whole contract.
+That generates CSS classes `k` keywords, `n` names, `s` strings, `m`
+numbers, `c` comments and a few for a diff's rows: `gi` inserted,
+`gd` deleted, `gu` hunk header, `gc` context. Colors are yours to style.
+Those names are the contract.
 
-The curation is the point. It is fast and small because it is
-deliberately incomplete and covers only a few languages. A format with
-no scanner is escaped and rendered uncolored, so callers can mix. See
-`doc.go`.
+It is fast and small because it is deliberately incomplete and covers only a few
+curated languages. A format with no scanner is escaped and rendered uncolored,
+so callers can mix. See `doc.go`.
 
 ## GitHub repo is a mirror
 
