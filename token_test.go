@@ -63,6 +63,7 @@ func TestScannerForNames(t *testing.T) {
 		"script.js", "javascript", "ts",
 		"tsconfig.json", "jsonc",
 		"index.html", "html",
+		"scanner.c", "parser.h", "c",
 		"init.lua", "lua",
 		"person.rb", "ruby",
 		"README.md", "markdown",

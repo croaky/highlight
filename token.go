@@ -70,6 +70,10 @@ func scannerFor(name string) scanFunc {
 		return scanJSON
 	case "html", "htm":
 		return scanHTML
+	case "c", "h":
+		// Not cc/cpp/hpp: C++ is a different keyword list, and
+		// coloring it with this one names half of it wrong.
+		return scanC
 	case "lua":
 		return scanLua
 	case "rb", "ruby":
