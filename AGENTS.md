@@ -31,8 +31,9 @@ go test -race -cover ./...
 git ls-files -z '*.go' | xargs -0 gopls check -severity=hint
 ```
 
-Nothing outside the standard library is imported. Taking a dependency is
-a design decision, not a step.
+The package imports nothing outside the standard library. Tests import
+`github.com/croaky/is` for assertions, and that is the only dependency.
+Taking another is a design decision, not a step.
 
 ## Tests
 
@@ -43,6 +44,13 @@ scanner that drops or repeats a byte shows a reader a line nobody wrote.
 
 A new language is a `scan_*.go`, a case in `scannerFor`, a table test,
 and a `testdata/sample.*` that exercises whatever it carries.
+
+Assertions come from `github.com/croaky/is`: `is := is.New(t)`, or
+`is.NewRelaxed(t)` where a case should report every mismatch rather
+than stop at the first. Pick the helper that names the check, `Eq` and
+`NotEq` by default, `True` only for a predicate with no want to name.
+Arguments are (got, want), and `Eq` takes `any`, so type the literal
+rather than converting the value under test.
 
 Incompleteness is allowed and does not need a test. Wrong color does.
 

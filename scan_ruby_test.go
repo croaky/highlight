@@ -1,6 +1,10 @@
 package highlight
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/croaky/is"
+)
 
 func TestScanRuby(t *testing.T) {
 	for _, tt := range []struct {
@@ -136,13 +140,12 @@ func TestScanRuby(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanRuby(tt.in, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanRuby(%q) = %q, want %q", tt.line, got, tt.want)
-			}
-			if out != tt.out {
-				t.Errorf("scanRuby(%q) ended in state %d, want %d", tt.line, out, tt.out)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
+			is.Eq(out, tt.out)
 		})
 	}
 }
@@ -150,28 +153,17 @@ func TestScanRuby(t *testing.T) {
 // TestHeredocState checks the two answers a tag can get: a state of its
 // own for the tags worth naming, and the shared loose one otherwise.
 func TestHeredocState(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	sql := heredocState("<<~SQL")
-	if sql <= stateHeredoc {
-		t.Errorf("heredocState(SQL) = %d, want a state of its own", sql)
-	}
-	if got := heredocState("<<-\"SQL\""); got != sql {
-		t.Errorf("a quoted tag = %d, want the same %d", got, sql)
-	}
-	if got := heredocState("<<~HTML"); got == sql {
-		t.Error("HTML and SQL share a state")
-	}
-	if got := heredocState("<<~SLACK"); got != stateHeredoc {
-		t.Errorf("heredocState(SLACK) = %d, want the loose %d", got, stateHeredoc)
-	}
+	is.True(sql > stateHeredoc)
+	is.Eq(heredocState("<<-\"SQL\""), sql)
+	is.NotEq(heredocState("<<~HTML"), sql)
+	is.Eq(heredocState("<<~SLACK"), stateHeredoc)
+
 	// The loose rule is what an unnamed tag gets, and a named one
 	// must not answer to another tag's word.
-	if heredocEnds(sql, "  HTML") {
-		t.Error("a SQL heredoc ended at HTML")
-	}
-	if !heredocEnds(stateHeredoc, "  ANYTHING") {
-		t.Error("the loose rule did not end at a line of capitals")
-	}
-	if heredocEnds(stateHeredoc, "") {
-		t.Error("the loose rule ended at a blank line")
-	}
+	is.True(!heredocEnds(sql, "  HTML"))
+	is.True(heredocEnds(stateHeredoc, "  ANYTHING"))
+	is.True(!heredocEnds(stateHeredoc, ""))
 }

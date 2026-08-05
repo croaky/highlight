@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/croaky/is"
 )
 
 // TestDiffRows checks that every kind of diff line keeps its
 // row class and its marker, since those are what color the row and
 // what tell an added line from a removed one.
 func TestDiffRows(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	patch := "@@ -1,3 +1,3 @@\n" +
 		" package main\n" +
 		"-const a = 1\n" +
@@ -24,50 +28,40 @@ func TestDiffRows(t *testing.T) {
 		`<span class=gi>+`,
 		`<span class=gu>\ No newline at end of file</span>`,
 	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("Diff output missing %q\nin: %s", want, got)
-		}
+		is.True(strings.Contains(got, want))
 	}
 
 	// One span per line and no newlines inside them: the enclosing
 	// <pre> ends a line, so a newline here would print a blank row
 	// between every pair of diff lines.
-	if n := strings.Count(got, "<span class=g"); n != 5 {
-		t.Errorf("Diff wrote %d rows, want 5\nin: %s", n, got)
-	}
-	if strings.Contains(got, "\n") {
-		t.Errorf("Diff output contains a newline: %q", got)
-	}
+	is.Eq(strings.Count(got, "<span class=g"), 5)
+	is.Eq(strings.Count(got, "\n"), 0)
 }
 
 // TestDiffTokenizes checks the second layer: the scanner
 // matched to the filename colors the code inside the row.
 func TestDiffTokenizes(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	got := string(Diff("main.go", "@@ -1 +1 @@\n+func main() {}\n"))
-	if !strings.Contains(got, `<span class=k>func</span>`) {
-		t.Errorf("Diff did not tokenize func as a keyword: %s", got)
-	}
+	is.True(strings.Contains(got, `<span class=k>func</span>`))
 
 	// An unknown extension still renders, with no token classes,
 	// which is a diff without code coloring rather than a page
 	// without a diff.
 	got = string(Diff("notes.unknownext", "@@ -1 +1 @@\n+func main() {}\n"))
-	if !strings.Contains(got, `<span class=gi>+func main() {}`) {
-		t.Errorf("Diff dropped an unlexable line: %s", got)
-	}
+	is.True(strings.Contains(got, `<span class=gi>+func main() {}`))
 }
 
 // TestDiffEscapes checks that patch text cannot become
 // markup. The content is a file in the repo under review, so it is as
 // untrusted as anything else a stranger can push.
 func TestDiffEscapes(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	got := string(Diff("README.md", "@@ -1 +1 @@\n+<script>alert(1)</script>\n"))
-	if strings.Contains(got, "<script>") {
-		t.Errorf("Diff passed a script tag through: %s", got)
-	}
-	if !strings.Contains(got, "&lt;script&gt;") {
-		t.Errorf("Diff did not escape a script tag: %s", got)
-	}
+	is.True(!strings.Contains(got, "<script>"))
+	is.True(strings.Contains(got, "&lt;script&gt;"))
 }
 
 // Highlighting used to be what a change page spent its time on: a

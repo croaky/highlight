@@ -1,3 +1,5 @@
 module github.com/croaky/highlight
 
 go 1.26
+
+require github.com/croaky/is v0.2.0

@@ -1,6 +1,10 @@
 package highlight
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/croaky/is"
+)
 
 func TestScanHTML(t *testing.T) {
 	for _, tt := range []struct {
@@ -97,13 +101,12 @@ func TestScanHTML(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanHTML(tt.in, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanHTML(%q) = %q, want %q", tt.line, got, tt.want)
-			}
-			if out != tt.out {
-				t.Errorf("scanHTML(%q) ended in state %d, want %d", tt.line, out, tt.out)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
+			is.Eq(out, tt.out)
 		})
 	}
 }

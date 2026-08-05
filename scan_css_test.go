@@ -3,6 +3,8 @@ package highlight
 import (
 	"strings"
 	"testing"
+
+	"github.com/croaky/is"
 )
 
 func TestScanCSS(t *testing.T) {
@@ -94,13 +96,12 @@ func TestScanCSS(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanCSS(tt.in, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanCSS(%q) = %q, want %q", tt.line, got, tt.want)
-			}
-			if out != tt.out {
-				t.Errorf("scanCSS(%q) ended in state %d, want %d", tt.line, out, tt.out)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
+			is.Eq(out, tt.out)
 		})
 	}
 }
@@ -109,14 +110,14 @@ func TestScanCSS(t *testing.T) {
 // rather than merely tinted, which is the whole point of having the
 // scanner.
 func TestScanCSSByExtension(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	got := string(Diff("ui/style.css", "@@ -1 +1 @@\n+.a { color: #fff; }\n"))
 	for _, want := range []string{
 		`<span class=n>.a</span>`,
 		`<span class=k>color</span>`,
 		`<span class=m>#fff</span>`,
 	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("a css patch is missing %q\nin: %s", want, got)
-		}
+		is.True(strings.Contains(got, want))
 	}
 }

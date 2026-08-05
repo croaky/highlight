@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/croaky/is"
 )
 
 // TestScannersAreLossless runs every scanner over a file in its own
@@ -25,31 +27,25 @@ func TestScannersAreLossless(t *testing.T) {
 	}
 	for _, name := range names {
 		t.Run(filepath.Base(name), func(t *testing.T) {
+			is := is.New(t)
+
 			scan := scannerFor(name)
-			if scan == nil {
-				t.Fatalf("no scanner for %s", name)
-			}
+			is.NotNil(scan)
+
 			src, err := os.ReadFile(name)
-			if err != nil {
-				t.Fatal(err)
-			}
+			is.NoErr(err)
+
 			var st state
-			for i, line := range strings.Split(string(src), "\n") {
+			for line := range strings.SplitSeq(string(src), "\n") {
 				ts, next := scan(st, line)
 				var got strings.Builder
 				for _, tk := range ts {
 					got.WriteString(tk.text)
 				}
-				if got.String() != line {
-					t.Fatalf("%s:%d scanned as %q, want %q",
-						name, i+1, got.String(), line)
-				}
+				is.Eq(got.String(), line)
 				st = next
 			}
-			if st != stateCode {
-				t.Errorf("scanning %s ended in state %d, want %d",
-					name, st, stateCode)
-			}
+			is.Eq(st, stateCode)
 		})
 	}
 }
@@ -57,6 +53,8 @@ func TestScannersAreLossless(t *testing.T) {
 // TestScannerForNames checks the two things a caller can hand in: a
 // path, whose extension names the language, and the language itself.
 func TestScannerForNames(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	for _, name := range []string{
 		"main.go", "go", "GO",
 		"deploy.sh", "bash", "zsh",
@@ -70,15 +68,11 @@ func TestScannerForNames(t *testing.T) {
 		"README.md", "markdown",
 		"show.hml", "haml",
 	} {
-		if scannerFor(name) == nil {
-			t.Errorf("scannerFor(%q) = nil, want a scanner", name)
-		}
+		is.NotNil(scannerFor(name))
 	}
 	for _, name := range []string{
 		"notes.unknownext", "brainfuck", "", "Makefile", "txt", "notes.txt",
 	} {
-		if scannerFor(name) != nil {
-			t.Errorf("scannerFor(%q) returned a scanner, want nil", name)
-		}
+		is.Nil(scannerFor(name))
 	}
 }

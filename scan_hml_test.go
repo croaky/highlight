@@ -1,6 +1,10 @@
 package highlight
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/croaky/is"
+)
 
 func TestScanHML(t *testing.T) {
 	for _, tt := range []struct {
@@ -57,14 +61,13 @@ func TestScanHML(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanHML(stateCode, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanHML(%q) = %q, want %q", tt.line, got, tt.want)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
 			// Nothing in hml spans lines, so the state never moves.
-			if out != stateCode {
-				t.Errorf("scanHML(%q) ended in state %d, want %d", tt.line, out, stateCode)
-			}
+			is.Eq(out, stateCode)
 		})
 	}
 }

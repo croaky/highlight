@@ -3,6 +3,8 @@ package highlight
 import (
 	"strings"
 	"testing"
+
+	"github.com/croaky/is"
 )
 
 func TestScanJS(t *testing.T) {
@@ -94,26 +96,25 @@ func TestScanJS(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanJS(tt.in, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanJS(%q) = %q, want %q", tt.line, got, tt.want)
-			}
-			if out != tt.out {
-				t.Errorf("scanJS(%q) ended in state %d, want %d", tt.line, out, tt.out)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
+			is.Eq(out, tt.out)
 		})
 	}
 }
 
 // TestScanJSByExtension checks the wiring.
 func TestScanJSByExtension(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	got := string(Diff("ui/script.js", "@@ -1 +1 @@\n+const a = 1;\n"))
 	for _, want := range []string{
 		`<span class=k>const</span>`,
 		`<span class=m>1</span>`,
 	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("a js patch is missing %q\nin: %s", want, got)
-		}
+		is.True(strings.Contains(got, want))
 	}
 }

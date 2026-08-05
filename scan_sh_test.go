@@ -1,6 +1,10 @@
 package highlight
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/croaky/is"
+)
 
 func TestScanShell(t *testing.T) {
 	for _, tt := range []struct {
@@ -56,13 +60,12 @@ func TestScanShell(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanShell(tt.in, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanShell(%q) = %q, want %q", tt.line, got, tt.want)
-			}
-			if out != tt.out {
-				t.Errorf("scanShell(%q) ended in state %d, want %d", tt.line, out, tt.out)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
+			is.Eq(out, tt.out)
 		})
 	}
 }

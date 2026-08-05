@@ -3,6 +3,8 @@ package highlight
 import (
 	"strings"
 	"testing"
+
+	"github.com/croaky/is"
 )
 
 // TestScanGo prices one line at a time: a keyword, a name, a string, a
@@ -91,13 +93,12 @@ func TestScanGo(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanGo(tt.in, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanGo(%q) = %q, want %q", tt.line, got, tt.want)
-			}
-			if out != tt.out {
-				t.Errorf("scanGo(%q) ended in state %d, want %d", tt.line, out, tt.out)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
+			is.Eq(out, tt.out)
 		})
 	}
 }
@@ -116,6 +117,8 @@ func formatTokens(ts []token) string {
 // edit inside a raw string leaves the old and new files in different
 // states, and neither may leak into the other.
 func TestDiffCarriesStatePerSide(t *testing.T) {
+	is := is.NewRelaxed(t)
+
 	patch := "@@ -1,3 +1,3 @@\n" +
 		" q := `SELECT 1\n" +
 		"-FROM old`\n" +
@@ -128,13 +131,9 @@ func TestDiffCarriesStatePerSide(t *testing.T) {
 		`<span class=gd>-<span class=s>FROM old`,
 		`<span class=gi>+<span class=s>FROM new`,
 	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("Diff output missing %q\nin: %s", want, got)
-		}
+		is.True(strings.Contains(got, want))
 	}
 	// The string closed on both sides, so the context line after it is
 	// code again.
-	if !strings.Contains(got, `<span class=gc> <span class=k>func</span>`) {
-		t.Errorf("Diff kept scanning past a closed raw string: %s", got)
-	}
+	is.True(strings.Contains(got, `<span class=gc> <span class=k>func</span>`))
 }

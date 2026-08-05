@@ -1,6 +1,10 @@
 package highlight
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/croaky/is"
+)
 
 func TestScanMarkdown(t *testing.T) {
 	for _, tt := range []struct {
@@ -56,13 +60,12 @@ func TestScanMarkdown(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.NewRelaxed(t)
+
 			ts, out := scanMarkdown(tt.in, tt.line)
-			if got := formatTokens(ts); got != tt.want {
-				t.Errorf("scanMarkdown(%q) = %q, want %q", tt.line, got, tt.want)
-			}
-			if out != tt.out {
-				t.Errorf("scanMarkdown(%q) ended in state %d, want %d", tt.line, out, tt.out)
-			}
+
+			is.Eq(formatTokens(ts), tt.want)
+			is.Eq(out, tt.out)
 		})
 	}
 }
