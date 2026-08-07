@@ -35,9 +35,9 @@ func scanRuby(st state, line string) ([]token, state) {
 	// the same rule.
 	var prev byte
 	for i := 0; i < len(line); {
-		switch st {
-		case stateCode:
-		case stateRawString:
+		switch st.kind {
+		case kindCode:
+		case kindRawString:
 			// A percent literal or a regex left open. Both end at
 			// their delimiter, and neither nests across a line.
 			if j := strings.IndexAny(line[i:], ")]}>/"); j >= 0 {
@@ -48,10 +48,10 @@ func scanRuby(st state, line string) ([]token, state) {
 			}
 			ts.add("s", line[i:])
 			return ts.done(), st
-		default:
-			// A heredoc: the body is the whole line whatever it
-			// holds, and so is the terminator, which belongs to the
-			// literal it ends.
+		case kindHeredoc:
+			// The body is the whole line whatever it holds, and so
+			// is the terminator, which belongs to the literal it
+			// ends.
 			ts.add("s", line)
 			if heredocEnds(st, line) {
 				return ts.done(), stateCode
@@ -225,51 +225,29 @@ func heredocTagLen(s string) int {
 	return i
 }
 
-// heredocTags are the terminators a carry can name. state
-// stateHeredoc+1+i is "inside a heredoc that ends at heredocTags[i]",
-// which is what a body full of capitals needs: a bare FROM on its own
-// line does not end a <<~SQL, and formatted SQL is most of what the
-// heredocs here hold.
+// heredocState is the carry for a heredoc opened by opener, which is the
+// whole thing: <<, any ~ or -, and any quotes. What is left is the
+// terminator, and the state remembers it.
 //
-// A tag not listed falls back to stateHeredoc, which ends at the first
-// line that is nothing but capitals. That is the loose rule, and it is
-// right often enough for prose: the bodies whose tags are missing here
-// are messages and descriptions, where a line of capitals alone is not
-// something anybody writes.
-var heredocTags = [...]string{
-	"SQL", "GRAPHQL", "HTML", "XML", "HAML", "CSV", "JSON", "YAML",
-	"TEXT", "TXT", "DESC", "MSG", "PROMPT", "BODY", "EOS", "EOF",
-	"SH", "RUBY", "GO",
-}
-
-// heredocState is the carry for a heredoc opened by tag, which is the
-// whole opener: <<, any ~ or -, and any quotes.
+// heredocTagLen has already read the tag by the time this is called, so
+// there is always one to carry and no fallback to pick. That is what
+// replaced a list of nineteen tags worth naming: the body of a
+// <<~SQL keeps its bare FROM either way, and a <<~MIGRATION now keeps
+// its bare SELECT too.
 func heredocState(opener string) state {
-	tag := strings.Trim(strings.TrimLeft(opener, "<~-"), `"'`)
-	for i, known := range heredocTags {
-		if tag == known {
-			return stateHeredoc + 1 + state(i)
-		}
+	return state{
+		kind: kindHeredoc,
+		tag:  strings.Trim(strings.TrimLeft(opener, "<~-"), `"'`),
 	}
-	return stateHeredoc
 }
 
 // heredocEnds reports whether line is the terminator of the heredoc st
 // is inside: the tag alone, indented or not.
+//
+// A blank line is not one, which falls out of the comparison rather than
+// needing its own case: a tag is never empty.
 func heredocEnds(st state, line string) bool {
-	s := strings.TrimSpace(line)
-	if s == "" {
-		return false
-	}
-	if st > stateHeredoc {
-		return s == heredocTags[st-stateHeredoc-1]
-	}
-	for i := 0; i < len(s); i++ {
-		if s[i] != '_' && !(s[i] >= 'A' && s[i] <= 'Z') && !isDigit(s[i]) {
-			return false
-		}
-	}
-	return true
+	return strings.TrimSpace(line) == st.tag
 }
 
 // isPercentLiteral reports whether s opens one: %w[] and its siblings,

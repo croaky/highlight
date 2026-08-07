@@ -25,23 +25,51 @@ func words(w ...string) map[string]bool {
 	return m
 }
 
-// state is what a scanner carries from one line to the next, for the
-// tokens that outlive a line: a raw string, a block comment, a fenced
-// code block. Its meaning is per-language; only stateCode is shared,
-// and it is the zero value so a scan starts mid-nothing.
-type state int
+// kind is which sort of thing a scanner is in the middle of: a raw
+// string, a block comment, a fenced code block. Its meaning is
+// per-language; only kindCode is shared, and it is the zero value so a
+// scan starts mid-nothing.
+type kind int
 
 const (
-	stateCode state = iota
-	stateRawString
-	stateBlockComment
-	stateSingleQuote
-	stateDoubleQuote
-	stateFence
-	stateTag
-	// Last, because Ruby's heredocs take the values above it: one
-	// per terminator a carry can name. See heredocTags.
-	stateHeredoc
+	kindCode kind = iota
+	kindRawString
+	kindBlockComment
+	kindSingleQuote
+	kindDoubleQuote
+	kindFence
+	kindTag
+	kindHeredoc
+)
+
+// state is what a scanner carries from one line to the next, for the
+// tokens that outlive a line.
+//
+// A kind is enough for every carry but one. Ruby's heredoc ends at the
+// word that opened it, so that word has to be carried too, and it used
+// to be encoded as arithmetic on the state: stateHeredoc+1+i, indexing a
+// list of nineteen tags worth naming. That was the hardest thing in the
+// package to read, and it capped which heredocs were scanned correctly
+// at those nineteen -- a <<~MIGRATION fell back to ending at the first
+// line of nothing but capitals, which is a body a reader can lose.
+//
+// Comparable, and the zero value is code, so st == stateCode is still
+// the test and var st state still starts a scan in code.
+type state struct {
+	kind kind
+	tag  string // the heredoc terminator, when kind is kindHeredoc
+}
+
+// The carries a scanner names. Vars rather than consts, since a struct
+// cannot be constant, and nothing assigns to them.
+var (
+	stateCode         = state{kind: kindCode}
+	stateRawString    = state{kind: kindRawString}
+	stateBlockComment = state{kind: kindBlockComment}
+	stateSingleQuote  = state{kind: kindSingleQuote}
+	stateDoubleQuote  = state{kind: kindDoubleQuote}
+	stateFence        = state{kind: kindFence}
+	stateTag          = state{kind: kindTag}
 )
 
 // scanFunc tokenizes one line, given the state the previous line

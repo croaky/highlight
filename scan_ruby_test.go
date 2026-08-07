@@ -120,12 +120,21 @@ func TestScanRuby(t *testing.T) {
 			want: `s:  SQL`,
 		},
 		{
-			// A tag nothing here names falls back to the loose
-			// rule: the first line that is nothing but capitals.
-			name: "an unnamed tag ends at any capitals",
+			name: "any tag terminates the body",
 			in:   heredocState("<<~SLACK"),
 			line: `  SLACK`,
 			want: `s:  SLACK`,
+		},
+		{
+			// The bug the carried tag fixes. A tag no list named
+			// used to end at the first line of nothing but
+			// capitals, so this body stopped at its own SELECT and
+			// the rest of the query was colored as Ruby.
+			name: "a bare keyword does not end an unlisted tag",
+			in:   heredocState("<<~MIGRATION"),
+			line: `  SELECT`,
+			want: `s:  SELECT`,
+			out:  heredocState("<<~MIGRATION"),
 		},
 		{
 			name: "a quoted heredoc tag",
@@ -150,20 +159,27 @@ func TestScanRuby(t *testing.T) {
 	}
 }
 
-// TestHeredocState checks the two answers a tag can get: a state of its
-// own for the tags worth naming, and the shared loose one otherwise.
+// TestHeredocState checks what the opener is reduced to, since the tag
+// is now the whole of what a heredoc carry knows.
 func TestHeredocState(t *testing.T) {
 	is := is.NewRelaxed(t)
 
 	sql := heredocState("<<~SQL")
-	is.True(sql > stateHeredoc)
-	is.Eq(heredocState("<<-\"SQL\""), sql)
-	is.NotEq(heredocState("<<~HTML"), sql)
-	is.Eq(heredocState("<<~SLACK"), stateHeredoc)
+	is.Eq(sql, state{kind: kindHeredoc, tag: "SQL"})
 
-	// The loose rule is what an unnamed tag gets, and a named one
-	// must not answer to another tag's word.
+	// The squiggle, the dash, and the quotes are how the body is
+	// indented and interpolated, not part of the word that ends it.
+	is.Eq(heredocState("<<-\"SQL\""), sql)
+	is.Eq(heredocState("<<'SQL'"), sql)
+	is.NotEq(heredocState("<<~HTML"), sql)
+
+	// Every tag is exact, so one must not answer to another's word,
+	// and a tag no list would have named is no different.
+	is.True(heredocEnds(sql, "  SQL"))
 	is.True(!heredocEnds(sql, "  HTML"))
-	is.True(heredocEnds(stateHeredoc, "  ANYTHING"))
-	is.True(!heredocEnds(stateHeredoc, ""))
+	is.True(!heredocEnds(sql, ""))
+
+	migration := heredocState("<<~MIGRATION")
+	is.True(heredocEnds(migration, "  MIGRATION"))
+	is.True(!heredocEnds(migration, "  SELECT"))
 }

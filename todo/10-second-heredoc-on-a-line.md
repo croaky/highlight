@@ -26,11 +26,11 @@ second heredoc the same code path as the first.
 
 Add a table case for both lines above.
 
-## Why after 09
+## What 09 left
 
-Both changes are in the same twenty lines of the heredoc carry. If `09`
-lands, the pending value is a tag rather than an encoded state and this
-is a smaller change. If `09` is declined, do this on its own.
+`09` landed, so the value to hold is a tag rather than an encoded state.
+`heredocState` already builds the carry from the opener, and the pending
+one is that same value set aside until the line ends.
 
 ## Commit
 
