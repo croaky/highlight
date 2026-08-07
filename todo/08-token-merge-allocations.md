@@ -12,15 +12,20 @@ merged so far. `token.go:90` says the merge exists so a line of
 punctuation is one token rather than twenty, which it achieves by doing
 twenty allocations to get there.
 
-## Only if 01 says so
+## Only if a profile says so
 
 This is the one item on the list where reading the code oversells the
 cost. The merged runs are short, the allocator is good at short strings,
-and a scanner that is already fast enough does not need this. Do it if
-the benchmark from `01` puts `add` in the profile, and drop this file if
-it does not.
+and a scanner that is already fast enough does not need this. Do it if a
+profile of `BenchmarkDiffChange` puts `add` near the top, and drop this
+file if it does not.
 
-## Two shapes, if it is worth doing
+The benchmarks say the cost is shared rather than per-language:
+throughput is flat across all twelve samples, so whatever this is worth,
+it is worth the same everywhere. Take `02` first, since it is the other
+half of the same write path and a smaller change.
+
+## Two ways, if it is worth doing
 
 Hold the trailing run in a builder inside `tokens` and materialize it
 when the class changes or the line ends. Contained in `token.go`, and no

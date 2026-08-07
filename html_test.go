@@ -1,6 +1,9 @@
 package highlight
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -56,5 +59,37 @@ func TestCodeEscapes(t *testing.T) {
 		is.NoErr(Code(&got, tt.name, "<script>alert(1)</script>"))
 		is.True(!strings.Contains(got.String(), "<script>"))
 		is.True(strings.Contains(got.String(), tt.want))
+	}
+}
+
+// BenchmarkCode runs the whole-file emitter over every sample, one
+// sub-benchmark each, so a scanner that is slower than its neighbors is
+// visible as itself rather than averaged into a total. The samples are
+// small and differently sized, which is what SetBytes is for: bytes per
+// second compares across them and nanoseconds per operation does not.
+//
+// Allocations are reported rather than left to -benchmem, since what
+// this emitter spends is mostly what it allocates and the flag is a
+// thing to remember.
+func BenchmarkCode(b *testing.B) {
+	names, err := filepath.Glob("testdata/sample.*")
+	if err != nil || len(names) == 0 {
+		b.Fatal("no samples in testdata")
+	}
+	for _, name := range names {
+		src, err := os.ReadFile(name)
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Run(filepath.Base(name), func(b *testing.B) {
+			b.ReportAllocs()
+			b.SetBytes(int64(len(src)))
+
+			for b.Loop() {
+				if err := Code(io.Discard, name, string(src)); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }

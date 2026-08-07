@@ -13,7 +13,7 @@ line that is all capitals, which is a body a reader can lose.
 
 ## Decision needed first
 
-Do not write this until we agree on the shape. The proposal:
+Do not write this until we agree on what `state` becomes. The proposal:
 
 ```go
 type state struct {

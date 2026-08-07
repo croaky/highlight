@@ -79,6 +79,8 @@ func BenchmarkDiff(b *testing.B) {
 	}
 	patch := sb.String()
 
+	b.ReportAllocs()
+
 	for b.Loop() {
 		Diff("main.go", patch)
 	}
@@ -99,6 +101,8 @@ func BenchmarkDiffChange(b *testing.B) {
 		fmt.Fprintf(&sb, "+\tfoo := bar(%d, \"qux\")\n", f)
 		patches = append(patches, sb.String())
 	}
+
+	b.ReportAllocs()
 
 	for b.Loop() {
 		for _, p := range patches {

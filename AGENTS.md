@@ -60,10 +60,23 @@ Incompleteness is allowed and does not need a test. Wrong color does.
 numbered in the order the changes should land. A file says why its
 change sits where it does and what it is deliberately not doing, which
 is the part that would otherwise be lost. `todo/README.md` is the order
-and the rules behind it. Delete a file when its change lands, in the
-same commit.
+and the rules behind it.
 
-That is what a `todo:` commit acts on.
+A `todo:` commit is one that changes the plan: a file added, reordered,
+or dropped as no longer worth doing. Doing the work is not a `todo:`
+commit. It takes the prefix of what it acts on, and it deletes the file
+it finishes, in the same commit as the code. A file that outlives its
+change becomes a note about something already fixed, and a directory of
+those is one nobody opens.
+
+Two things fall out of a deletion. The numbers are positions and not
+names, so a gap is fine and nothing gets renumbered to close it. And a
+file that pointed at the deleted one has to say what it means instead,
+usually by naming the thing that now exists.
+
+A file's premise can turn out to be wrong, since it was written before
+the work. Say so in the commit message rather than quietly doing
+something else, and fix the files that assumed the same thing.
 
 ## Changes
 

@@ -35,8 +35,8 @@ table from `html/template`'s source rather than writing it from memory.
 
 ## Done when
 
-`token_test.go` and the emitter tests pass unchanged, and the `01`
-numbers show fewer allocations per operation.
+`token_test.go` and the emitter tests pass unchanged, and `BenchmarkCode`
+and `BenchmarkDiff` report fewer allocations per operation.
 
 ## Commit
 
