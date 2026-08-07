@@ -58,6 +58,7 @@ const (
 type state struct {
 	kind kind
 	tag  string // the heredoc terminator, when kind is kindHeredoc
+	next string // a second heredoc opened on the same line, waiting
 }
 
 // The carries a scanner names. Vars rather than consts, since a struct

@@ -34,6 +34,13 @@ func scanRuby(st state, line string) ([]token, state) {
 	// a regex or a division -- the same ambiguity JavaScript has, and
 	// the same rule.
 	var prev byte
+	// The heredocs this line opened. Their bodies begin on the next
+	// line, not here -- the rest of `sql = <<~SQL, x` is code -- so the
+	// carry is held until the line ends. This used to be a recursive
+	// scan of the remainder whose state was thrown away, which is how a
+	// second opener on one line was lost.
+	var pending state
+line:
 	for i := 0; i < len(line); {
 		switch st.kind {
 		case kindCode:
@@ -47,16 +54,16 @@ func scanRuby(st state, line string) ([]token, state) {
 				continue
 			}
 			ts.add("s", line[i:])
-			return ts.done(), st
+			break line
 		case kindHeredoc:
 			// The body is the whole line whatever it holds, and so
 			// is the terminator, which belongs to the literal it
 			// ends.
 			ts.add("s", line)
 			if heredocEnds(st, line) {
-				return ts.done(), stateCode
+				st = st.afterHeredoc()
 			}
-			return ts.done(), st
+			break line
 		}
 
 		c := line[i]
@@ -65,7 +72,7 @@ func scanRuby(st state, line string) ([]token, state) {
 			// Not #{...}: interpolation is only inside a string,
 			// and a scan is never in code there.
 			ts.add("c", line[i:])
-			return ts.done(), st
+			break line
 		case c == '"' || c == '\'' || c == '`':
 			n := scanQuoted(line[i:], c)
 			ts.add("s", line[i:i+n])
@@ -73,15 +80,8 @@ func scanRuby(st state, line string) ([]token, state) {
 		case isHeredocStart(line[i:]):
 			n := heredocTagLen(line[i:])
 			ts.add("s", line[i:i+n])
-			st = heredocState(line[i : i+n])
+			pending = pending.queueHeredoc(line[i : i+n])
 			i += n
-			// The rest of the line is code -- `sql = <<~SQL, x` --
-			// so the carry starts at the next line, not here.
-			ts2, _ := scanRuby(stateCode, line[i:])
-			for _, tk := range ts2 {
-				ts.add(tk.class, tk.text)
-			}
-			return ts.done(), st
 		case c == '%' && isPercentLiteral(line[i:]):
 			n, closed := scanDelimited(line[i+2:], closerFor(line[i+2]))
 			ts.add("s", line[i:i+2+n])
@@ -155,6 +155,13 @@ func scanRuby(st state, line string) ([]token, state) {
 		if c != ' ' && c != '\t' {
 			prev = c
 		}
+	}
+	// A heredoc opened here outranks a literal left open on the same
+	// line, which is what the recursion did by returning early. Both at
+	// once is `x = <<~SQL; y = %w[a`, where whichever is carried the
+	// other is lost.
+	if pending.kind == kindHeredoc {
+		return ts.done(), pending
 	}
 	return ts.done(), st
 }
@@ -248,6 +255,36 @@ func heredocState(opener string) state {
 // needing its own case: a tag is never empty.
 func heredocEnds(st state, line string) bool {
 	return strings.TrimSpace(line) == st.tag
+}
+
+// queueHeredoc adds the heredoc opened by opener to the carry a line is
+// building. `a = <<~A; b = <<~B` is two on one line, and Ruby reads
+// their bodies in the order the openers appear: all of A, A's
+// terminator, then all of B. So the first stays current and the second
+// waits behind it.
+//
+// A third is dropped, which is where the line gets drawn. Holding any
+// number means a slice, and a slice costs state its comparability --
+// with it go st == stateCode and every table that names an expected
+// carry. Two on a line is written; three is not.
+func (st state) queueHeredoc(opener string) state {
+	h := heredocState(opener)
+	switch {
+	case st.kind != kindHeredoc:
+		return h
+	case st.next == "":
+		st.next = h.tag
+	}
+	return st
+}
+
+// afterHeredoc is the carry once a terminator has been read: the heredoc
+// queued behind it, or code.
+func (st state) afterHeredoc() state {
+	if st.next == "" {
+		return stateCode
+	}
+	return state{kind: kindHeredoc, tag: st.next}
 }
 
 // isPercentLiteral reports whether s opens one: %w[] and its siblings,

@@ -8,8 +8,8 @@ list.
 One rule is left, now that the moves and the measured changes have
 landed:
 
-- Decisions last. `10` changes the heredoc carry, whose shape `09`
-  settled. `11` is a decision with nothing scheduled behind it.
+- Decisions last. `11` is a decision with nothing scheduled behind it,
+  and `12` is a coloring bug `10` turned up while reading the carry.
 
 Every change runs the `Checkfile` list before it opens:
 

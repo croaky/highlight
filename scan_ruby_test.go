@@ -143,6 +143,45 @@ func TestScanRuby(t *testing.T) {
 			out:  heredocState("<<-'EOS'"),
 		},
 		{
+			// The comment ends the line but not the carry, which is
+			// the case the pending value has to survive: the body
+			// still begins on the next line.
+			name: "a comment after a heredoc opener",
+			line: `  sql = <<~SQL # why`,
+			want: `:  sql = |s:<<~SQL|: |c:# why`,
+			out:  heredocState("<<~SQL"),
+		},
+		{
+			// Two on one line. The recursion that used to scan the
+			// rest of the line threw its state away, so B was lost
+			// and its body came back colored as Ruby.
+			name: "two heredocs open on one line",
+			line: `a = <<~A; b = <<~B`,
+			want: `:a = |s:<<~A|:; b = |s:<<~B`,
+			out:  state{kind: kindHeredoc, tag: "A", next: "B"},
+		},
+		{
+			name: "the first body runs while the second waits",
+			in:   state{kind: kindHeredoc, tag: "A", next: "B"},
+			line: `  first`,
+			want: `s:  first`,
+			out:  state{kind: kindHeredoc, tag: "A", next: "B"},
+		},
+		{
+			// A's terminator hands over to B rather than to code.
+			name: "the first terminator starts the second",
+			in:   state{kind: kindHeredoc, tag: "A", next: "B"},
+			line: `A`,
+			want: `s:A`,
+			out:  heredocState("<<~B"),
+		},
+		{
+			name: "the second terminator returns to code",
+			in:   heredocState("<<~B"),
+			line: `B`,
+			want: `s:B`,
+		},
+		{
 			name: "numbers",
 			line: `  n = 0xff + 1_000 + 1.5e3`,
 			want: `:  n = |m:0xff|: + |m:1_000|: + |m:1.5e3`,
@@ -157,6 +196,28 @@ func TestScanRuby(t *testing.T) {
 			is.Eq(out, tt.out)
 		})
 	}
+}
+
+// TestHeredocQueue covers the second heredoc a line can open and the
+// third it cannot.
+func TestHeredocQueue(t *testing.T) {
+	is := is.NewRelaxed(t)
+
+	var none state
+	a := none.queueHeredoc("<<~A")
+	is.Eq(a, heredocState("<<~A"))
+
+	ab := a.queueHeredoc("<<~B")
+	is.Eq(ab, state{kind: kindHeredoc, tag: "A", next: "B"})
+
+	// The third is dropped rather than displacing either of the first
+	// two, since A's body is read before B's and holding any number
+	// would cost state its comparability.
+	is.Eq(ab.queueHeredoc("<<~C"), ab)
+
+	// A terminator hands over to what is queued, and then to code.
+	is.Eq(ab.afterHeredoc(), heredocState("<<~B"))
+	is.Eq(heredocState("<<~B").afterHeredoc(), stateCode)
 }
 
 // TestHeredocState checks what the opener is reduced to, since the tag
