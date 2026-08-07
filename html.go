@@ -18,11 +18,14 @@ func Code(w io.Writer, name, src string) error {
 	scan := scannerFor(name)
 
 	var buf bytes.Buffer
+	buf.Grow(len(src) + len(src)/4)
 	var st state
-	for i, line := range strings.Split(src, "\n") {
-		if i > 0 {
+	first := true
+	for line := range strings.SplitSeq(src, "\n") {
+		if !first {
 			buf.WriteByte('\n')
 		}
+		first = false
 		writeContent(&buf, scan, &st, line)
 	}
 	_, err := w.Write(buf.Bytes())
@@ -47,6 +50,7 @@ func Diff(filename, patch string) template.HTML {
 	scan := scannerFor(filename)
 
 	var buf bytes.Buffer
+	buf.Grow(len(patch) + len(patch)/4)
 	buf.WriteString(`<span class=diff>`)
 	var oldSt, newSt state
 	for line := range strings.SplitSeq(patch, "\n") {
@@ -57,12 +61,11 @@ func Diff(filename, patch string) template.HTML {
 			continue
 		}
 		switch line[0] {
-		case '@':
-			oldSt, newSt = stateCode, stateCode
-			buf.WriteString(`<span class=gu>`)
-			writeEscaped(&buf, line)
-			buf.WriteString(`</span>`)
-		case '\\':
+		case '@', '\\':
+			if line[0] == '@' {
+				// The file jumped, so neither carry means anything.
+				oldSt, newSt = stateCode, stateCode
+			}
 			buf.WriteString(`<span class=gu>`)
 			writeEscaped(&buf, line)
 			buf.WriteString(`</span>`)
