@@ -60,11 +60,11 @@ func Diff(filename, patch string) template.HTML {
 		case '@':
 			oldSt, newSt = stateCode, stateCode
 			buf.WriteString(`<span class=gu>`)
-			buf.WriteString(template.HTMLEscapeString(line))
+			writeEscaped(&buf, line)
 			buf.WriteString(`</span>`)
 		case '\\':
 			buf.WriteString(`<span class=gu>`)
-			buf.WriteString(template.HTMLEscapeString(line))
+			writeEscaped(&buf, line)
 			buf.WriteString(`</span>`)
 		case '+':
 			buf.WriteString(`<span class=gi>+`)
@@ -103,7 +103,7 @@ func Diff(filename, patch string) template.HTML {
 // means no color, not no line.
 func writeContent(buf *bytes.Buffer, scan scanFunc, st *state, content string) {
 	if scan == nil {
-		buf.WriteString(template.HTMLEscapeString(content))
+		writeEscaped(buf, content)
 		return
 	}
 	ts, next := scan(*st, content)
@@ -117,13 +117,47 @@ func writeContent(buf *bytes.Buffer, scan scanFunc, st *state, content string) {
 func writeTokens(buf *bytes.Buffer, ts []token) {
 	for _, t := range ts {
 		if t.class == "" {
-			buf.WriteString(template.HTMLEscapeString(t.text))
+			writeEscaped(buf, t.text)
 			continue
 		}
 		buf.WriteString(`<span class=`)
 		buf.WriteString(t.class)
 		buf.WriteString(`>`)
-		buf.WriteString(template.HTMLEscapeString(t.text))
+		writeEscaped(buf, t.text)
 		buf.WriteString(`</span>`)
 	}
+}
+
+// writeEscaped writes s with the bytes that could become markup
+// replaced, and the runs between them written as they are. A token with
+// nothing to escape is one write and no allocation.
+//
+// The replacements are the ones html/template writes, byte for byte,
+// since the tests spell out expected HTML and the package documents
+// this escaping.
+func writeEscaped(buf *bytes.Buffer, s string) {
+	start := 0
+	for i := 0; i < len(s); i++ {
+		var repl string
+		switch s[i] {
+		case 0:
+			repl = "\uFFFD"
+		case '"':
+			repl = "&#34;"
+		case '\'':
+			repl = "&#39;"
+		case '&':
+			repl = "&amp;"
+		case '<':
+			repl = "&lt;"
+		case '>':
+			repl = "&gt;"
+		default:
+			continue
+		}
+		buf.WriteString(s[start:i])
+		buf.WriteString(repl)
+		start = i + 1
+	}
+	buf.WriteString(s[start:])
 }

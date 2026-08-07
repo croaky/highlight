@@ -1,6 +1,8 @@
 package highlight
 
 import (
+	"bytes"
+	"html/template"
 	"io"
 	"os"
 	"path/filepath"
@@ -59,6 +61,28 @@ func TestCodeEscapes(t *testing.T) {
 		is.NoErr(Code(&got, tt.name, "<script>alert(1)</script>"))
 		is.True(!strings.Contains(got.String(), "<script>"))
 		is.True(strings.Contains(got.String(), tt.want))
+	}
+}
+
+// TestWriteEscaped pins the replacements to the ones html/template
+// writes. The tests here and downstream spell out expected HTML, so a
+// table that is merely equivalent is still a break.
+func TestWriteEscaped(t *testing.T) {
+	is := is.NewRelaxed(t)
+
+	for _, s := range []string{
+		"",
+		"plain text",
+		"a & b",
+		`<a href="x">`,
+		"it's",
+		"&<>\"'",
+		"nul\x00byte",
+		"héllo → 世界",
+	} {
+		var buf bytes.Buffer
+		writeEscaped(&buf, s)
+		is.Eq(buf.String(), template.HTMLEscapeString(s))
 	}
 }
 
