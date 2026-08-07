@@ -260,13 +260,22 @@ func scanQuoted(s string, quote byte) int {
 	return 1 + n
 }
 
-// endsOperand reports whether c ends something a slash could divide. A
-// name, a digit, or a closing bracket does; an operator, a comma, or an
-// open bracket does not, and the slash after one of those opens a
-// regex. JavaScript and Ruby both need the rule, and it is the same
-// rule in both.
-func endsOperand(c byte) bool {
-	return c == ')' || c == ']' || c == '}' || c == '$' || isIdent(c)
+// closesOperand reports whether c is punctuation that ends something a
+// slash could divide: a closing bracket, since (a + b) is a value. Every
+// other byte a scanner reaches as plain punctuation is an operator, a
+// separator, or an open bracket, and a slash after one of those opens a
+// regex.
+//
+// Punctuation only. Everything else that ends an operand -- a name, a
+// number, a string, a regex -- is a token some branch already
+// recognized, and that branch says so directly. Asking this of the byte
+// the previous token started with is what read `x = "a" / b / c` as a
+// regex: a literal begins with its delimiter, so by that test no literal
+// ever ended an operand.
+//
+// JavaScript and Ruby both need the rule, and it is the same in both.
+func closesOperand(c byte) bool {
+	return c == ')' || c == ']' || c == '}'
 }
 
 // scanRegex returns the length of the regex literal at the start of s,

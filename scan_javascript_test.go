@@ -80,6 +80,24 @@ func TestScanJS(t *testing.T) {
 			want: "k:const|: half = total / |m:2|:;",
 		},
 		{
+			// A literal ends an operand, so a slash after one divides.
+			// This compared the byte the previous token began with,
+			// which for a string is its opening quote, so no literal
+			// ever counted and `/ b /` came back as a regex.
+			name: "a slash after a string divides",
+			line: `const x = "a" / b / c;`,
+			want: `k:const|: x = |s:"a"|: / b / c;`,
+		},
+		{
+			// The case this scanner already claimed to handle, by
+			// setting prev to a backtick -- which the rule answered no
+			// to, so the comment and the code disagreed.
+			name: "a slash after a template literal divides",
+			in:   stateRawString,
+			line: "a` / b / c;",
+			want: "s:a`|: / b / c;",
+		},
+		{
 			name: "escaped quote",
 			line: "if (e.key !== \"\\\\\") {",
 			want: "k:if|: (e.key !== |s:\"\\\\\"|:) {",

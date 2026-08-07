@@ -33,16 +33,18 @@ var jsNames = words(
 //
 // A slash is the language's ambiguity: it opens a regex where a value
 // belongs and divides where an operand just ended. What precedes it
-// decides, so the scan remembers the last character that was not
-// whitespace -- an identifier, a number, or a closing bracket means
-// division, and anything else means a regex. That is the same rule a
-// parser uses, minus the parser.
+// decides, so each branch says whether what it read was a value. That is
+// the same rule a parser uses, minus the parser.
 func scanJS(st state, line string) ([]token, state) {
 	var ts tokens
-	// The last character that mattered, for the slash above. Zero at
-	// the start of a line, which reads as "a value belongs here": a
-	// line beginning with a regex is a line beginning with a value.
-	var prev byte
+	// Whether the last token ended an operand, for the slash above.
+	// False at the start of a line, which reads as "a value belongs
+	// here": a line beginning with a regex is a line beginning with a
+	// value.
+	//
+	// This was the byte the previous token began with, which a literal
+	// could never satisfy -- see closesOperand.
+	var operand bool
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
@@ -53,8 +55,10 @@ func scanJS(st state, line string) ([]token, state) {
 			}
 			st = stateCode
 			// A template literal is a value, so a slash after it
-			// divides.
-			prev = '`'
+			// divides. This said the same thing by setting prev to a
+			// backtick, which closesOperand answers no to, so it
+			// read the slash in `` `a` / b / c `` as a regex.
+			operand = true
 			continue
 		case stateBlockComment:
 			n, closed := ts.drain("c", line[i:], "*/")
@@ -79,28 +83,36 @@ func scanJS(st state, line string) ([]token, state) {
 			ts.add("c", "/*")
 			i += 2
 			st = stateBlockComment
-		case c == '/' && !endsOperand(prev):
+			operand = false
+		case c == '/' && !operand:
 			// A regex, if it closes on this line. One that does not is
 			// a division whose right side is still being typed.
 			if n := scanRegex(line[i:]); n > 0 {
 				ts.add("s", line[i:i+n])
 				i += n
+				operand = true
 				break
 			}
 			ts.add("", line[i:i+1])
 			i++
+			operand = false
 		case c == '`':
 			ts.add("s", "`")
 			i++
 			st = stateRawString
+			// Not a value yet. The branch above sets it when the
+			// literal closes, which may be lines from here.
+			operand = false
 		case c == '"' || c == '\'':
 			n := scanQuoted(line[i:], c)
 			ts.add("s", line[i:i+n])
 			i += n
+			operand = true
 		case isDigit(c) || (c == '.' && i+1 < len(line) && isDigit(line[i+1])):
 			n := scanNumber(line[i:])
 			ts.add("m", line[i:i+n])
 			i += n
+			operand = true
 		case isJSIdentStart(c):
 			j := i + 1
 			for j < len(line) && isJSIdent(line[j]) {
@@ -118,11 +130,16 @@ func scanJS(st state, line string) ([]token, state) {
 				ts.add("", word)
 			}
 			i = j
+			// Every word, keyword included. `return /re/` is a regex
+			// after a keyword that expects a value, which this reads
+			// as a division -- the same answer the byte gave, and a
+			// keyword list of its own to fix.
+			operand = true
 		default:
 			ts.add("", line[i:i+1])
 			i++
+			operand = closesOperand(c)
 		}
-		prev = c
 	}
 	return ts.done(), st
 }

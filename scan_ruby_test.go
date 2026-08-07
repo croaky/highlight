@@ -94,6 +94,35 @@ func TestScanRuby(t *testing.T) {
 			want: `:  |k:if|: name =~ |s:/\A[a-z]+\z/|: |k:then|: n / |m:2|: |k:end`,
 		},
 		{
+			// A literal ends an operand, so a slash after one divides.
+			// This compared the byte the previous token began with,
+			// which for a string is its opening quote, so no literal
+			// ever counted and `/ b /` came back as a regex.
+			name: "a slash after a string divides",
+			line: `x = "a" / b / c`,
+			want: `:x = |s:"a"|: / b / c`,
+		},
+		{
+			name: "a slash after a percent literal divides",
+			line: `x = %w[a] / b / c`,
+			want: `:x = |s:%w[a]|: / b / c`,
+		},
+		{
+			// The opener stands for a string whose body is elsewhere,
+			// so the rest of the line reads as if a value sat here.
+			name: "a slash after a heredoc opener divides",
+			line: `x = <<~SQL / b / c`,
+			want: `:x = |s:<<~SQL|: / b / c`,
+			out:  heredocState("<<~SQL"),
+		},
+		{
+			// A closing bracket is the punctuation that ends a value,
+			// which is all closesOperand is left deciding.
+			name: "a slash after a closing paren divides",
+			line: `x = (a + b) / 2`,
+			want: `:x = (a + b) / |m:2`,
+		},
+		{
 			name: "append is not a heredoc",
 			line: `  rows << row`,
 			want: `:  rows << row`,

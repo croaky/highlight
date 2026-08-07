@@ -30,10 +30,16 @@ var rubyKeywords = words(
 // the shell scanner treats $VAR.
 func scanRuby(st state, line string) ([]token, state) {
 	var ts tokens
-	// The last character that mattered, for the slash that is either
-	// a regex or a division -- the same ambiguity JavaScript has, and
-	// the same rule.
-	var prev byte
+	// Whether the last token ended an operand, for the slash that is
+	// either a regex or a division -- the same ambiguity JavaScript has,
+	// and the same rule. False at the start of a line, which reads as "a
+	// value belongs here".
+	//
+	// Each branch below says so, because the branch is what knows. This
+	// was the byte the previous token began with, which cannot tell a
+	// string's opening quote from its closing one, so no literal counted
+	// and `x = "a" / b / c` came back with `/ b /` colored as a regex.
+	var operand bool
 	// The heredocs this line opened. Their bodies begin on the next
 	// line, not here -- the rest of `sql = <<~SQL, x` is code -- so the
 	// carry is held until the line ends. This used to be a recursive
@@ -51,6 +57,9 @@ line:
 				ts.add("s", line[i:i+j+1])
 				i += j + 1
 				st = stateCode
+				// The literal that just closed is a value, so a
+				// slash after it divides.
+				operand = true
 				continue
 			}
 			ts.add("s", line[i:])
@@ -77,11 +86,15 @@ line:
 			n := scanQuoted(line[i:], c)
 			ts.add("s", line[i:i+n])
 			i += n
+			operand = true
 		case isHeredocStart(line[i:]):
 			n := heredocTagLen(line[i:])
 			ts.add("s", line[i:i+n])
 			pending = pending.queueHeredoc(line[i : i+n])
 			i += n
+			// The opener stands for the body, which is a string, so
+			// the rest of the line reads as if a value sat here.
+			operand = true
 		case c == '%' && isPercentLiteral(line[i:]):
 			n, closed := scanDelimited(line[i+2:], closerFor(line[i+2]))
 			ts.add("s", line[i:i+2+n])
@@ -89,19 +102,24 @@ line:
 			if !closed {
 				st = stateRawString
 			}
-		case c == '/' && !endsOperand(prev):
+			operand = true
+		case c == '/' && !operand:
 			if n := scanRegex(line[i:]); n > 0 {
 				ts.add("s", line[i:i+n])
 				i += n
+				operand = true
 				break
 			}
+			// A division whose right side is still being typed.
 			ts.add("", line[i:i+1])
 			i++
+			operand = false
 		case strings.HasPrefix(line[i:], "::"):
 			// Scope, not a symbol. The constant to its right is
 			// colored by the name branch below.
 			ts.add("", "::")
 			i += 2
+			operand = false
 		case c == ':' && i+1 < len(line) && isSymbolStart(line[i+1]):
 			// A symbol is a name that is also a value, so it takes
 			// the name color.
@@ -112,6 +130,7 @@ line:
 			}
 			ts.add("n", line[i:i+n])
 			i += n
+			operand = true
 		case c == '@' || c == '$':
 			// An instance, class, or global variable. The sigil is
 			// part of the name.
@@ -122,10 +141,12 @@ line:
 			n := j - i + rubyIdentLen(line[j:])
 			ts.add("n", line[i:i+n])
 			i += n
+			operand = true
 		case isDigit(c):
 			n := scanNumber(line[i:])
 			ts.add("m", line[i:i+n])
 			i += n
+			operand = true
 		case isIdentStart(c):
 			n := rubyIdentLen(line[i:])
 			word := line[i : i+n]
@@ -148,12 +169,19 @@ line:
 				ts.add("", word)
 			}
 			i += n
+			// Every word, keyword included. `return /re/` is a regex
+			// after a keyword that expects a value, which this reads
+			// as a division -- the same answer the byte gave, and a
+			// keyword list of its own to fix.
+			operand = true
 		default:
 			ts.add("", line[i:i+1])
 			i++
-		}
-		if c != ' ' && c != '\t' {
-			prev = c
+			// Whitespace leaves it alone: a slash is decided by the
+			// last thing that mattered, not by the space before it.
+			if !isSpace(c) {
+				operand = closesOperand(c)
+			}
 		}
 	}
 	// A heredoc opened here outranks a literal left open on the same

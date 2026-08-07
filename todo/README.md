@@ -5,11 +5,9 @@ meant to be a single cibot change: open it, review it, land it, then
 start the next. The numbering is the dependency order, not a priority
 list.
 
-One rule is left, now that the moves and the measured changes have
-landed:
-
-- Decisions last. `11` is a decision with nothing scheduled behind it,
-  and `12` is a coloring bug `10` turned up while reading the carry.
+`11` is all that is left, and it is a decision rather than work: which
+shape the two emitters should share, worth settling before something
+needs both.
 
 Every change runs the `Checkfile` list before it opens:
 
