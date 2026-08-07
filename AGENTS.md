@@ -88,13 +88,24 @@ tell what it is or whether it overlaps what they are about to start. A
 rough sentence beats an empty one, and the description gets rewritten
 before the merge anyway.
 
+Write the title and description as the commit message they become. A
+merge is a squash that takes them verbatim, so a title like "Escape into
+the buffer" lands in `git log` next to `html: escape into the buffer`,
+and the log stops being one thing. Title is the subject, description is
+the body, both under the rules below. The first pass can be rough; make
+it a real subject line before the merge.
+
 ## Commits
 
-- Prefix with what the change acts on: the language (`go:`, `css:`,
+- Subject: `scope: imperative summary`, at most 50 characters, lowercase
+  except proper nouns, no trailing period.
+- The scope is what the change acts on: the language (`go:`, `css:`,
   `sql:`), or the layer (`token:`, `html:`, `doc:`, `todo:`, `ci:`).
   Not `highlight:` — every commit here is highlight.
-- Imperative mood, lowercase except proper nouns. Hard-wrap at 72.
-- Include _why_, not just _what_. See `git log` for examples.
+- Blank line, then a body hard-wrapped at 72, in sentences with
+  punctuation.
+- Include _why_, not just _what_, and cut whatever is inessential. See
+  `git log` for the scopes in use and for examples.
 - Sign your work with a `Co-Authored-By` trailer.
 
 ## Releases

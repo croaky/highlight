@@ -5,14 +5,12 @@ import "strings"
 // shKeywords is the shell's own words. Builtins are not here: which
 // names a shell resolves internally is a long list that changes per
 // shell, and a reader does not read a script for that.
-var shKeywords = map[string]bool{
-	"if": true, "then": true, "elif": true, "else": true, "fi": true,
-	"for": true, "while": true, "until": true, "do": true, "done": true,
-	"case": true, "esac": true, "in": true, "function": true,
-	"select": true, "time": true, "return": true, "break": true,
-	"continue": true, "local": true, "export": true, "readonly": true,
-	"set": true, "shift": true, "trap": true, "exit": true,
-}
+var shKeywords = words(
+	"if", "then", "elif", "else", "fi", "for", "while", "until",
+	"do", "done", "case", "esac", "in", "function", "select",
+	"time", "return", "break", "continue", "local", "export",
+	"readonly", "set", "shift", "trap", "exit",
+)
 
 // scanShell tokenizes one line of sh. Both quote kinds span lines, so
 // both are carry states. $VAR inside a double-quoted string stays part

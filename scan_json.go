@@ -2,9 +2,7 @@ package highlight
 
 // jsonWords is every bare word JSON has. Anything else unquoted is
 // not JSON, so it stays uncolored rather than being guessed at.
-var jsonWords = map[string]bool{
-	"true": true, "false": true, "null": true,
-}
+var jsonWords = words("true", "false", "null")
 
 // scanJSON tokenizes one line of JSON. A key is a name and a value is
 // a string, which is the one distinction worth making in a language

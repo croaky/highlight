@@ -4,36 +4,28 @@ package highlight
 // keywords. The contextual ones -- get, set, from, static -- are left
 // out: they are ordinary method names often enough that coloring them
 // would be wrong more than right.
-var jsKeywords = map[string]bool{
-	"async": true, "await": true, "break": true, "case": true,
-	"catch": true, "class": true, "const": true, "continue": true,
-	"debugger": true, "default": true, "delete": true, "do": true,
-	"else": true, "export": true, "extends": true, "false": true,
-	"finally": true, "for": true, "function": true, "if": true,
-	"import": true, "in": true, "instanceof": true, "let": true,
-	"new": true, "null": true, "of": true, "return": true,
-	"super": true, "switch": true, "this": true, "throw": true,
-	"true": true, "try": true, "typeof": true, "undefined": true,
-	"var": true, "void": true, "while": true, "with": true,
-	"yield": true,
-}
+var jsKeywords = words(
+	"async", "await", "break", "case", "catch", "class", "const",
+	"continue", "debugger", "default", "delete", "do", "else",
+	"export", "extends", "false", "finally", "for", "function",
+	"if", "import", "in", "instanceof", "let", "new", "null", "of",
+	"return", "super", "switch", "this", "throw", "true", "try",
+	"typeof", "undefined", "var", "void", "while", "with", "yield",
+)
 
 // jsNames is the globals a page reaches for. They are the closest
 // thing JavaScript has to Go's predeclared identifiers; everything else
 // that gets the name color is a call, recognized by the paren after it.
-var jsNames = map[string]bool{
-	"AbortController": true, "Array": true, "Boolean": true,
-	"DOMParser": true, "Date": true, "Error": true, "EventSource": true,
-	"FormData": true, "JSON": true, "Map": true, "Math": true,
-	"Number": true, "Object": true, "Promise": true, "RegExp": true,
-	"Set": true, "String": true, "URL": true, "URLSearchParams": true,
-	"clearInterval": true, "clearTimeout": true, "console": true,
-	"document": true, "fetch": true, "history": true,
-	"localStorage": true, "location": true, "navigator": true,
-	"queueMicrotask": true, "requestAnimationFrame": true,
-	"sessionStorage": true, "setInterval": true, "setTimeout": true,
-	"structuredClone": true, "window": true,
-}
+var jsNames = words(
+	"AbortController", "Array", "Boolean", "DOMParser", "Date",
+	"Error", "EventSource", "FormData", "JSON", "Map", "Math",
+	"Number", "Object", "Promise", "RegExp", "Set", "String", "URL",
+	"URLSearchParams", "clearInterval", "clearTimeout", "console",
+	"document", "fetch", "history", "localStorage", "location",
+	"navigator", "queueMicrotask", "requestAnimationFrame",
+	"sessionStorage", "setInterval", "setTimeout",
+	"structuredClone", "window",
+)
 
 // scanJS tokenizes one line of JavaScript, carrying the two states that
 // outlive a line: a template literal and a block comment. A quoted

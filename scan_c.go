@@ -4,21 +4,16 @@ import "strings"
 
 // cKeywords is C11's reserved words, plus the three the standard
 // spells as macros in headers a reader will still read as keywords.
-var cKeywords = map[string]bool{
-	"auto": true, "break": true, "case": true, "char": true,
-	"const": true, "continue": true, "default": true, "do": true,
-	"double": true, "else": true, "enum": true, "extern": true,
-	"float": true, "for": true, "goto": true, "if": true,
-	"inline": true, "int": true, "long": true, "register": true,
-	"restrict": true, "return": true, "short": true, "signed": true,
-	"sizeof": true, "static": true, "struct": true, "switch": true,
-	"typedef": true, "union": true, "unsigned": true, "void": true,
-	"volatile": true, "while": true,
-	"_Alignas": true, "_Alignof": true, "_Atomic": true, "_Bool": true,
-	"_Complex": true, "_Generic": true, "_Imaginary": true,
-	"_Noreturn": true, "_Static_assert": true, "_Thread_local": true,
-	"bool": true, "false": true, "true": true,
-}
+var cKeywords = words(
+	"auto", "break", "case", "char", "const", "continue", "default",
+	"do", "double", "else", "enum", "extern", "float", "for",
+	"goto", "if", "inline", "int", "long", "register", "restrict",
+	"return", "short", "signed", "sizeof", "static", "struct",
+	"switch", "typedef", "union", "unsigned", "void", "volatile",
+	"while", "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex",
+	"_Generic", "_Imaginary", "_Noreturn", "_Static_assert",
+	"_Thread_local", "bool", "false", "true",
+)
 
 // scanC tokenizes one line of C, carrying the one thing that outlives
 // a line: a /* */ comment.

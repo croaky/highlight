@@ -4,10 +4,10 @@ import "strings"
 
 // hmlKeywords is the whole control vocabulary of the language, which
 // bans everything else: no assignment, no method calls, no raw output.
-var hmlKeywords = map[string]bool{
-	"if": true, "elsif": true, "else": true, "for": true, "in": true,
-	"render": true, "true": true, "false": true, "nil": true,
-}
+var hmlKeywords = words(
+	"if", "elsif", "else", "for", "in", "render", "true", "false",
+	"nil",
+)
 
 // scanHML tokenizes one line of hml, the template language whose
 // indentation is its structure. Nothing here spans lines: a filter

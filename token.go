@@ -14,6 +14,17 @@ type token struct {
 	text  string
 }
 
+// words is a set of the words given, for the keyword and name lists a
+// scanner matches against. A list is the part of a scanner most likely
+// to be edited, so it is spelled as the words and nothing else.
+func words(w ...string) map[string]bool {
+	m := make(map[string]bool, len(w))
+	for _, s := range w {
+		m[s] = true
+	}
+	return m
+}
+
 // state is what a scanner carries from one line to the next, for the
 // tokens that outlive a line: a raw string, a block comment, a fenced
 // code block. Its meaning is per-language; only stateCode is shared,

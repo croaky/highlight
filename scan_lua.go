@@ -4,30 +4,24 @@ import "strings"
 
 // luaKeywords is the reserved words, plus the three literals that read
 // as keywords.
-var luaKeywords = map[string]bool{
-	"and": true, "break": true, "do": true, "else": true,
-	"elseif": true, "end": true, "false": true, "for": true,
-	"function": true, "goto": true, "if": true, "in": true,
-	"local": true, "nil": true, "not": true, "or": true,
-	"repeat": true, "return": true, "then": true, "true": true,
-	"until": true, "while": true,
-}
+var luaKeywords = words(
+	"and", "break", "do", "else", "elseif", "end", "false", "for",
+	"function", "goto", "if", "in", "local", "nil", "not", "or",
+	"repeat", "return", "then", "true", "until", "while",
+)
 
 // luaNames is the standard library and the one global a Neovim config
 // is written against. Lua's library is small enough to name, which is
 // what makes it worth naming: everything else that gets the name color
 // is a call, recognized by the paren after it.
-var luaNames = map[string]bool{
-	"assert": true, "collectgarbage": true, "coroutine": true,
-	"debug": true, "dofile": true, "error": true, "getmetatable": true,
-	"io": true, "ipairs": true, "load": true, "loadstring": true,
-	"math": true, "next": true, "os": true, "package": true,
-	"pairs": true, "pcall": true, "print": true, "rawequal": true,
-	"rawget": true, "rawlen": true, "rawset": true, "require": true,
-	"select": true, "setmetatable": true, "string": true,
-	"table": true, "tonumber": true, "tostring": true, "type": true,
-	"unpack": true, "vim": true, "xpcall": true,
-}
+var luaNames = words(
+	"assert", "collectgarbage", "coroutine", "debug", "dofile",
+	"error", "getmetatable", "io", "ipairs", "load", "loadstring",
+	"math", "next", "os", "package", "pairs", "pcall", "print",
+	"rawequal", "rawget", "rawlen", "rawset", "require", "select",
+	"setmetatable", "string", "table", "tonumber", "tostring",
+	"type", "unpack", "vim", "xpcall",
+)
 
 // scanLua tokenizes one line of Lua, carrying the two things that
 // outlive a line: a long string and a long comment, both written in

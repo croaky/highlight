@@ -2,31 +2,24 @@ package highlight
 
 // goKeywords is the spec's list, plus the predeclared constants, which
 // read as keywords and are colored like them.
-var goKeywords = map[string]bool{
-	"break": true, "case": true, "chan": true, "const": true,
-	"continue": true, "default": true, "defer": true, "else": true,
-	"fallthrough": true, "for": true, "func": true, "go": true,
-	"goto": true, "if": true, "import": true, "interface": true,
-	"map": true, "package": true, "range": true, "return": true,
-	"select": true, "struct": true, "switch": true, "type": true,
-	"var": true, "true": true, "false": true, "iota": true, "nil": true,
-}
+var goKeywords = words(
+	"break", "case", "chan", "const", "continue", "default",
+	"defer", "else", "fallthrough", "for", "func", "go", "goto",
+	"if", "import", "interface", "map", "package", "range",
+	"return", "select", "struct", "switch", "type", "var", "true",
+	"false", "iota", "nil",
+)
 
 // goNames is the predeclared types and functions. Everything else that
 // gets the name color is a call, recognized by the paren after it.
-var goNames = map[string]bool{
-	"any": true, "bool": true, "byte": true, "comparable": true,
-	"complex64": true, "complex128": true, "error": true,
-	"float32": true, "float64": true, "int": true, "int8": true,
-	"int16": true, "int32": true, "int64": true, "rune": true,
-	"string": true, "uint": true, "uint8": true, "uint16": true,
-	"uint32": true, "uint64": true, "uintptr": true,
-	"append": true, "cap": true, "clear": true, "close": true,
-	"complex": true, "copy": true, "delete": true, "imag": true,
-	"len": true, "make": true, "max": true, "min": true, "new": true,
-	"panic": true, "print": true, "println": true, "real": true,
-	"recover": true,
-}
+var goNames = words(
+	"any", "bool", "byte", "comparable", "complex64", "complex128",
+	"error", "float32", "float64", "int", "int8", "int16", "int32",
+	"int64", "rune", "string", "uint", "uint8", "uint16", "uint32",
+	"uint64", "uintptr", "append", "cap", "clear", "close",
+	"complex", "copy", "delete", "imag", "len", "make", "max",
+	"min", "new", "panic", "print", "println", "real", "recover",
+)
 
 // scanGo tokenizes one line of Go, carrying the two states that outlive
 // a line: a raw string and a block comment. Those are the tokens a

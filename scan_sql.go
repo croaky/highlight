@@ -5,29 +5,21 @@ import "strings"
 // sqlKeywords is what ordinary queries and migrations use, matched
 // case-insensitively. It is a reading aid, not a dialect definition:
 // a word missing here is uncolored, not wrong.
-var sqlKeywords = map[string]bool{
-	"add": true, "all": true, "alter": true, "and": true, "any": true,
-	"as": true, "asc": true, "begin": true, "between": true,
-	"bigint": true, "boolean": true, "by": true, "cascade": true,
-	"case": true, "cast": true, "check": true, "coalesce": true,
-	"column": true, "commit": true, "conflict": true, "constraint": true,
-	"count": true, "create": true, "cross": true, "current_timestamp": true,
-	"default": true, "delete": true, "desc": true, "distinct": true,
-	"do": true, "drop": true, "else": true, "end": true, "exists": true,
-	"false": true, "for": true, "foreign": true, "from": true,
-	"full": true, "generated": true, "group": true, "having": true,
-	"identity": true, "if": true, "in": true, "index": true,
-	"inner": true, "insert": true, "int": true, "integer": true,
-	"interval": true, "into": true, "is": true, "join": true,
-	"jsonb": true, "key": true, "left": true, "like": true,
-	"limit": true, "not": true, "now": true, "null": true, "nulls": true,
-	"offset": true, "on": true, "or": true, "order": true, "outer": true,
-	"primary": true, "references": true, "returning": true,
-	"right": true, "rollback": true, "select": true, "set": true,
-	"table": true, "text": true, "then": true, "timestamptz": true,
-	"true": true, "unique": true, "update": true, "using": true,
-	"values": true, "when": true, "where": true, "with": true,
-}
+var sqlKeywords = words(
+	"add", "all", "alter", "and", "any", "as", "asc", "begin",
+	"between", "bigint", "boolean", "by", "cascade", "case", "cast",
+	"check", "coalesce", "column", "commit", "conflict",
+	"constraint", "count", "create", "cross", "current_timestamp",
+	"default", "delete", "desc", "distinct", "do", "drop", "else",
+	"end", "exists", "false", "for", "foreign", "from", "full",
+	"generated", "group", "having", "identity", "if", "in", "index",
+	"inner", "insert", "int", "integer", "interval", "into", "is",
+	"join", "jsonb", "key", "left", "like", "limit", "not", "now",
+	"null", "nulls", "offset", "on", "or", "order", "outer",
+	"primary", "references", "returning", "right", "rollback",
+	"select", "set", "table", "text", "then", "timestamptz", "true",
+	"unique", "update", "using", "values", "when", "where", "with",
+)
 
 // scanSQL tokenizes one line of SQL. A single-quoted string and a
 // /* */ comment both span lines, which is the whole reason for the

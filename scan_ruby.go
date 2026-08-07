@@ -6,18 +6,14 @@ import "strings"
 // visibility words that read as declarations. The rest of what looks
 // like a keyword in Ruby is a method -- require, attr_reader, puts, new
 // -- and a method is colored as the call it is.
-var rubyKeywords = map[string]bool{
-	"alias": true, "and": true, "begin": true, "break": true,
-	"case": true, "class": true, "def": true, "defined?": true,
-	"do": true, "else": true, "elsif": true, "end": true,
-	"ensure": true, "false": true, "for": true, "if": true,
-	"in": true, "module": true, "next": true, "nil": true,
-	"not": true, "or": true, "private": true, "protected": true,
-	"redo": true, "rescue": true, "retry": true, "return": true,
-	"self": true, "super": true, "then": true, "true": true,
-	"undef": true, "unless": true, "until": true, "when": true,
-	"while": true, "yield": true,
-}
+var rubyKeywords = words(
+	"alias", "and", "begin", "break", "case", "class", "def",
+	"defined?", "do", "else", "elsif", "end", "ensure", "false",
+	"for", "if", "in", "module", "next", "nil", "not", "or",
+	"private", "protected", "redo", "rescue", "retry", "return",
+	"self", "super", "then", "true", "undef", "unless", "until",
+	"when", "while", "yield",
+)
 
 // scanRuby tokenizes one line of Ruby.
 //
