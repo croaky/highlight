@@ -109,7 +109,7 @@ func scanRuby(st state, line string) ([]token, state) {
 		case c == ':' && i+1 < len(line) && isSymbolStart(line[i+1]):
 			// A symbol is a name that is also a value, so it takes
 			// the name color.
-			n := 1 + identLen(line[i+1:])
+			n := 1 + rubyIdentLen(line[i+1:])
 			if q := line[i+1]; q == '"' || q == '\'' {
 				// :"two words" is a symbol too.
 				n = 1 + scanQuoted(line[i+1:], q)
@@ -123,7 +123,7 @@ func scanRuby(st state, line string) ([]token, state) {
 			for j < len(line) && line[j] == '@' {
 				j++
 			}
-			n := j - i + identLen(line[j:])
+			n := j - i + rubyIdentLen(line[j:])
 			ts.add("n", line[i:i+n])
 			i += n
 		case isDigit(c):
@@ -131,7 +131,7 @@ func scanRuby(st state, line string) ([]token, state) {
 			ts.add("m", line[i:i+n])
 			i += n
 		case isIdentStart(c):
-			n := identLen(line[i:])
+			n := rubyIdentLen(line[i:])
 			word := line[i : i+n]
 			rest := line[i+n:]
 			switch {
@@ -163,15 +163,13 @@ func scanRuby(st state, line string) ([]token, state) {
 	return ts, st
 }
 
-// identLen is the length of the name at the start of s, including a
+// rubyIdentLen is the length of the name at the start of s, including a
 // trailing ? or ! where that is part of a method's name. empty? and
 // save! are names; `x != y` and `cond ? a : b` are not, which is why the
-// mark has to touch the name and, for !, not be an inequality.
-func identLen(s string) int {
-	i := 0
-	for i < len(s) && isIdent(s[i]) {
-		i++
-	}
+// mark has to touch the name and, for !, not be an inequality. That is
+// the whole reason this is not identEnd.
+func rubyIdentLen(s string) int {
+	i := identEnd(s, 0)
 	if i == 0 || i == len(s) {
 		return i
 	}

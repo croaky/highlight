@@ -53,10 +53,7 @@ func scanJSON(st state, line string) ([]token, state) {
 			ts.add("m", line[i:i+n])
 			i += n
 		case isIdentStart(c):
-			j := i + 1
-			for j < len(line) && isIdent(line[j]) {
-				j++
-			}
+			j := identEnd(line, i+1)
 			if word := line[i:j]; jsonWords[word] {
 				ts.add("k", word)
 			} else {

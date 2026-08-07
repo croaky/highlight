@@ -117,6 +117,17 @@ func isIdent(c byte) bool { return isIdentStart(c) || isDigit(c) }
 
 func isSpace(c byte) bool { return c == ' ' || c == '\t' }
 
+// identEnd is the index just past the name starting at line[i], which
+// the caller has already read as a name's first byte. A language whose
+// names take something isIdent does not, a shell flag's hyphen or a
+// Ruby method's ?, scans its own.
+func identEnd(line string, i int) int {
+	for i < len(line) && isIdent(line[i]) {
+		i++
+	}
+	return i
+}
+
 // scanDelimited returns the length of the run up to and including
 // close, and whether close was found. Escapes count, nesting does not:
 // a %w[] with a bracket inside it is rarer than the code this stays
