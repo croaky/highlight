@@ -54,6 +54,17 @@ rather than converting the value under test.
 
 Incompleteness is allowed and does not need a test. Wrong color does.
 
+## Todo
+
+`todo/` is the work that is planned and not done, one file per change,
+numbered in the order the changes should land. A file says why its
+change sits where it does and what it is deliberately not doing, which
+is the part that would otherwise be lost. `todo/README.md` is the order
+and the rules behind it. Delete a file when its change lands, in the
+same commit.
+
+That is what a `todo:` commit acts on.
+
 ## Commits
 
 - Prefix with what the change acts on: the language (`go:`, `css:`,
