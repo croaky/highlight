@@ -1,7 +1,5 @@
 package highlight
 
-import "strings"
-
 // jsonWords is every bare word JSON has. Anything else unquoted is
 // not JSON, so it stays uncolored rather than being guessed at.
 var jsonWords = map[string]bool{
@@ -23,14 +21,13 @@ func scanJSON(st state, line string) ([]token, state) {
 	var ts tokens
 	for i := 0; i < len(line); {
 		if st == stateBlockComment {
-			if j := strings.Index(line[i:], "*/"); j >= 0 {
-				ts.add("c", line[i:i+j+2])
-				i += j + 2
-				st = stateCode
-				continue
+			n, closed := ts.drain("c", line[i:], "*/")
+			i += n
+			if !closed {
+				return ts, st
 			}
-			ts.add("c", line[i:])
-			return ts, st
+			st = stateCode
+			continue
 		}
 
 		c := line[i]

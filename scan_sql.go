@@ -38,23 +38,21 @@ func scanSQL(st state, line string) ([]token, state) {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateSingleQuote:
-			if j := strings.IndexByte(line[i:], '\''); j >= 0 {
-				ts.add("s", line[i:i+j+1])
-				i += j + 1
-				st = stateCode
-				continue
+			n, closed := ts.drain("s", line[i:], "'")
+			i += n
+			if !closed {
+				return ts, st
 			}
-			ts.add("s", line[i:])
-			return ts, st
+			st = stateCode
+			continue
 		case stateBlockComment:
-			if j := strings.Index(line[i:], "*/"); j >= 0 {
-				ts.add("c", line[i:i+j+2])
-				i += j + 2
-				st = stateCode
-				continue
+			n, closed := ts.drain("c", line[i:], "*/")
+			i += n
+			if !closed {
+				return ts, st
 			}
-			ts.add("c", line[i:])
-			return ts, st
+			st = stateCode
+			continue
 		}
 
 		c := line[i]

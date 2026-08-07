@@ -1,7 +1,5 @@
 package highlight
 
-import "strings"
-
 // jsKeywords is the reserved words, plus the literals that read as
 // keywords. The contextual ones -- get, set, from, static -- are left
 // out: they are ordinary method names often enough that coloring them
@@ -56,24 +54,24 @@ func scanJS(st state, line string) ([]token, state) {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
-			if j := strings.IndexByte(line[i:], '`'); j >= 0 {
-				ts.add("s", line[i:i+j+1])
-				i += j + 1
-				st = stateCode
-				prev = '`'
-				continue
+			n, closed := ts.drain("s", line[i:], "`")
+			i += n
+			if !closed {
+				return ts, st
 			}
-			ts.add("s", line[i:])
-			return ts, st
+			st = stateCode
+			// A template literal is a value, so a slash after it
+			// divides.
+			prev = '`'
+			continue
 		case stateBlockComment:
-			if j := strings.Index(line[i:], "*/"); j >= 0 {
-				ts.add("c", line[i:i+j+2])
-				i += j + 2
-				st = stateCode
-				continue
+			n, closed := ts.drain("c", line[i:], "*/")
+			i += n
+			if !closed {
+				return ts, st
 			}
-			ts.add("c", line[i:])
-			return ts, st
+			st = stateCode
+			continue
 		}
 
 		c := line[i]

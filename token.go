@@ -101,6 +101,24 @@ func (ts *tokens) add(class, text string) {
 	*ts = append(*ts, token{class: class, text: text})
 }
 
+// drain finishes a carry: it emits s up to and including end and
+// reports true, or emits all of s and reports false when end is not on
+// this line. The returned length is what to advance by.
+//
+// Eight scanners end a raw string or a block comment this way, and the
+// byte arithmetic is the part that goes wrong. A caller that gets false
+// is still inside the carry and returns; one that gets true clears the
+// state and keeps scanning the rest of the line.
+func (ts *tokens) drain(class, s, end string) (int, bool) {
+	if j := strings.Index(s, end); j >= 0 {
+		n := j + len(end)
+		ts.add(class, s[:n])
+		return n, true
+	}
+	ts.add(class, s)
+	return len(s), false
+}
+
 // The scanners work a byte at a time. A UTF-8 continuation byte is
 // never punctuation or a digit, so treating every byte >= 0x80 as part
 // of an identifier keeps multibyte text inside one token without
