@@ -5,9 +5,9 @@ meant to be a single cibot change: open it, review it, land it, then
 start the next. The numbering is the dependency order, not a priority
 list.
 
-`11` is all that is left, and it is a decision rather than work: which
-shape the two emitters should share, worth settling before something
-needs both.
+Nothing is planned right now. Numbers are positions rather than names,
+so the next file starts past the highest one already used and no gap
+gets closed.
 
 Every change runs the `Checkfile` list before it opens:
 

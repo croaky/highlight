@@ -26,6 +26,20 @@
 // patch, where each row also carries a diff class (gi inserted, gd
 // deleted, gu hunk header, gc context).
 //
+// The two do not share a signature, and the difference is the
+// distinction rather than an oversight. Code takes an io.Writer because
+// a whole file is something a caller streams and frames: it writes its
+// own <pre> and <code> around the call, with no string in between. Diff
+// returns template.HTML because a patch is a fragment that becomes a
+// value: a page renders one per file into a row a template reads, where
+// a writer would mean a buffer for each.
+//
+// So a third emitter takes the shape of what it emits rather than one
+// this package picked. A whole file takes a writer; a fragment a
+// template will hold returns one. Nothing needs both shapes for the same
+// thing, and offering both on each emitter would double the surface to
+// save a caller a line.
+//
 // # Escaping
 //
 // Both emitters HTML-escape every byte they write. The source may be a
