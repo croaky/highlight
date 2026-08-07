@@ -31,7 +31,7 @@ func scanShell(st state, line string) ([]token, state) {
 			ts.add("s", line[i:])
 			return ts, st
 		case stateDoubleQuote:
-			if n, closed := scanShellDouble(line[i:]); closed {
+			if n, closed := scanDelimited(line[i:], '"'); closed {
 				ts.add("s", line[i:i+n])
 				i += n
 				st = stateCode
@@ -87,22 +87,4 @@ func scanShell(st state, line string) ([]token, state) {
 		}
 	}
 	return ts, st
-}
-
-// scanShellDouble returns the length of the double-quoted run at the
-// start of s and whether the closing quote is on this line.
-func scanShellDouble(s string) (int, bool) {
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '\\':
-			i++
-		case '"':
-			return i + 1, true
-		}
-	}
-	return len(s), false
-}
-
-func isSpace(c byte) bool {
-	return c == ' ' || c == '\t'
 }

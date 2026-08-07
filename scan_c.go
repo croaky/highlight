@@ -99,7 +99,7 @@ func scanC(st state, line string) ([]token, state) {
 // following lines are scanned as code, which is what most of them are.
 func scanCDirective(ts *tokens, line string) int {
 	i := 0
-	for i < len(line) && (line[i] == ' ' || line[i] == '\t') {
+	for i < len(line) && isSpace(line[i]) {
 		i++
 	}
 	if i == len(line) || line[i] != '#' {
@@ -110,7 +110,7 @@ func scanCDirective(ts *tokens, line string) int {
 	// The name may be separated from the hash: "#  define" is one
 	// directive.
 	j := i + 1
-	for j < len(line) && (line[j] == ' ' || line[j] == '\t') {
+	for j < len(line) && isSpace(line[j]) {
 		j++
 	}
 	k := j
@@ -122,7 +122,7 @@ func scanCDirective(ts *tokens, line string) int {
 	switch line[j:k] {
 	case "include", "include_next":
 		p := k
-		for p < len(line) && (line[p] == ' ' || line[p] == '\t') {
+		for p < len(line) && isSpace(line[p]) {
 			p++
 		}
 		if p < len(line) && line[p] == '<' {

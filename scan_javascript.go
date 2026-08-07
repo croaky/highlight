@@ -137,41 +137,6 @@ func scanJS(st state, line string) ([]token, state) {
 	return ts, st
 }
 
-// endsOperand reports whether c ends something a slash could divide. A
-// name, a digit, or a closing bracket does; an operator, a comma, or an
-// open bracket does not, and the slash after one of those opens a regex.
-func endsOperand(c byte) bool {
-	return c == ')' || c == ']' || c == '}' || isJSIdent(c)
-}
-
-// scanRegex returns the length of the regex literal at the start of s,
-// which begins with a slash, or 0 if it does not close on this line. A
-// slash inside a character class is a literal slash, which is why the
-// class is tracked rather than scanned for the next delimiter.
-func scanRegex(s string) int {
-	class := false
-	for i := 1; i < len(s); i++ {
-		switch s[i] {
-		case '\\':
-			i++
-		case '[':
-			class = true
-		case ']':
-			class = false
-		case '/':
-			if class {
-				continue
-			}
-			i++
-			for i < len(s) && isJSIdent(s[i]) {
-				i++
-			}
-			return i
-		}
-	}
-	return 0
-}
-
 // isJSIdentStart reports whether c can begin a name. The dollar sign
 // can, and is a name of its own in plenty of code.
 func isJSIdentStart(c byte) bool { return c == '$' || isIdentStart(c) }

@@ -115,19 +115,71 @@ func isIdentStart(c byte) bool {
 
 func isIdent(c byte) bool { return isIdentStart(c) || isDigit(c) }
 
+func isSpace(c byte) bool { return c == ' ' || c == '\t' }
+
+// scanDelimited returns the length of the run up to and including
+// close, and whether close was found. Escapes count, nesting does not:
+// a %w[] with a bracket inside it is rarer than the code this stays
+// simple for.
+//
+// s starts at the first byte of the run, not at an opening delimiter,
+// so a caller that has one has to skip it. scanQuoted is that caller.
+func scanDelimited(s string, close byte) (int, bool) {
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\\':
+			i++
+		case close:
+			return i + 1, true
+		}
+	}
+	return len(s), false
+}
+
 // scanQuoted returns the length of the quoted run starting at s[0],
 // which is the quote char, honoring backslash escapes. An unterminated
-// quote runs to the end of the line, the way the compiler reads it.
+// quote runs to the end of the line, the way the compiler reads it, so
+// there is nothing for a caller to decide and no bool to return.
 func scanQuoted(s string, quote byte) int {
+	n, _ := scanDelimited(s[1:], quote)
+	return 1 + n
+}
+
+// endsOperand reports whether c ends something a slash could divide. A
+// name, a digit, or a closing bracket does; an operator, a comma, or an
+// open bracket does not, and the slash after one of those opens a
+// regex. JavaScript and Ruby both need the rule, and it is the same
+// rule in both.
+func endsOperand(c byte) bool {
+	return c == ')' || c == ']' || c == '}' || c == '$' || isIdent(c)
+}
+
+// scanRegex returns the length of the regex literal at the start of s,
+// which begins with a slash, or 0 if it does not close on this line. A
+// slash inside a character class is a literal slash, which is why the
+// class is tracked rather than scanned for the next delimiter.
+func scanRegex(s string) int {
+	class := false
 	for i := 1; i < len(s); i++ {
 		switch s[i] {
 		case '\\':
 			i++
-		case quote:
-			return i + 1
+		case '[':
+			class = true
+		case ']':
+			class = false
+		case '/':
+			if class {
+				continue
+			}
+			i++
+			for i < len(s) && isIdent(s[i]) {
+				i++
+			}
+			return i
 		}
 	}
-	return len(s)
+	return 0
 }
 
 // scanNumber returns the length of the numeric literal at the start of

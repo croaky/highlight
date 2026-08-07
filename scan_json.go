@@ -78,9 +78,9 @@ func scanJSON(st state, line string) ([]token, state) {
 // carry state for a guess.
 func jsonStringClass(rest string) string {
 	for i := 0; i < len(rest); i++ {
-		switch rest[i] {
-		case ' ', '\t':
-		case ':':
+		switch {
+		case isSpace(rest[i]):
+		case rest[i] == ':':
 			return "n"
 		default:
 			return "s"

@@ -93,7 +93,7 @@ func scanRuby(st state, line string) ([]token, state) {
 			if !closed {
 				st = stateRawString
 			}
-		case c == '/' && !endsRubyOperand(prev):
+		case c == '/' && !endsOperand(prev):
 			if n := scanRegex(line[i:]); n > 0 {
 				ts.add("s", line[i:i+n])
 				i += n
@@ -309,26 +309,4 @@ func closerFor(open byte) byte {
 		return open
 	}
 	return 0
-}
-
-// scanDelimited returns the length of the run up to and including close,
-// and whether it was found. Escapes count, nesting does not: a %w[] with
-// a bracket inside it is rarer than the code this stays simple for.
-func scanDelimited(s string, close byte) (int, bool) {
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '\\':
-			i++
-		case close:
-			return i + 1, true
-		}
-	}
-	return len(s), false
-}
-
-// endsRubyOperand reports whether c ends something a slash could divide.
-// A name, a digit, or a closing bracket does; anything else means the
-// slash opens a regex. Same rule as JavaScript, and the same reason.
-func endsRubyOperand(c byte) bool {
-	return c == ')' || c == ']' || c == '}' || isIdent(c)
 }
