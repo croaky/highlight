@@ -22,7 +22,7 @@ func scanJSON(st state, line string) ([]token, state) {
 			n, closed := ts.drain("c", line[i:], "*/")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -32,7 +32,7 @@ func scanJSON(st state, line string) ([]token, state) {
 		switch {
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
 			ts.add("c", line[i:])
-			return ts, st
+			return ts.done(), st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			st = stateBlockComment
 			ts.add("c", line[i:i+2])
@@ -60,7 +60,7 @@ func scanJSON(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts, st
+	return ts.done(), st
 }
 
 // jsonStringClass is n for a key and s for a value, told apart by what

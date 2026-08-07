@@ -27,7 +27,7 @@ func scanShell(st state, line string) ([]token, state) {
 				continue
 			}
 			ts.add("s", line[i:])
-			return ts, st
+			return ts.done(), st
 		case stateDoubleQuote:
 			if n, closed := scanDelimited(line[i:], '"'); closed {
 				ts.add("s", line[i:i+n])
@@ -36,7 +36,7 @@ func scanShell(st state, line string) ([]token, state) {
 				continue
 			}
 			ts.add("s", line[i:])
-			return ts, st
+			return ts.done(), st
 		}
 
 		c := line[i]
@@ -45,7 +45,7 @@ func scanShell(st state, line string) ([]token, state) {
 			// A # elsewhere is part of a word: ${x#y}, a fragment in
 			// a URL.
 			ts.add("c", line[i:])
-			return ts, st
+			return ts.done(), st
 		case c == '\'':
 			ts.add("s", "'")
 			i++
@@ -84,5 +84,5 @@ func scanShell(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts, st
+	return ts.done(), st
 }

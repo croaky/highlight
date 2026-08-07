@@ -47,16 +47,16 @@ func scanRuby(st state, line string) ([]token, state) {
 				continue
 			}
 			ts.add("s", line[i:])
-			return ts, st
+			return ts.done(), st
 		default:
 			// A heredoc: the body is the whole line whatever it
 			// holds, and so is the terminator, which belongs to the
 			// literal it ends.
 			ts.add("s", line)
 			if heredocEnds(st, line) {
-				return ts, stateCode
+				return ts.done(), stateCode
 			}
-			return ts, st
+			return ts.done(), st
 		}
 
 		c := line[i]
@@ -65,7 +65,7 @@ func scanRuby(st state, line string) ([]token, state) {
 			// Not #{...}: interpolation is only inside a string,
 			// and a scan is never in code there.
 			ts.add("c", line[i:])
-			return ts, st
+			return ts.done(), st
 		case c == '"' || c == '\'' || c == '`':
 			n := scanQuoted(line[i:], c)
 			ts.add("s", line[i:i+n])
@@ -81,7 +81,7 @@ func scanRuby(st state, line string) ([]token, state) {
 			for _, tk := range ts2 {
 				ts.add(tk.class, tk.text)
 			}
-			return ts, st
+			return ts.done(), st
 		case c == '%' && isPercentLiteral(line[i:]):
 			n, closed := scanDelimited(line[i+2:], closerFor(line[i+2]))
 			ts.add("s", line[i:i+2+n])
@@ -156,7 +156,7 @@ func scanRuby(st state, line string) ([]token, state) {
 			prev = c
 		}
 	}
-	return ts, st
+	return ts.done(), st
 }
 
 // rubyIdentLen is the length of the name at the start of s, including a

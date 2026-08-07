@@ -19,25 +19,25 @@ func scanMarkdown(st state, line string) ([]token, state) {
 		ts.add("", indent)
 		ts.add("c", trimmed)
 		if st == stateFence {
-			return ts, stateCode
+			return ts.done(), stateCode
 		}
-		return ts, stateFence
+		return ts.done(), stateFence
 	}
 	if st == stateFence {
 		// Code, in a language we were not told. Uncolored is honest.
 		ts.add("", line)
-		return ts, st
+		return ts.done(), st
 	}
 
 	switch {
 	case strings.HasPrefix(trimmed, "#"):
 		ts.add("", indent)
 		ts.add("k", trimmed)
-		return ts, st
+		return ts.done(), st
 	case strings.HasPrefix(trimmed, ">"):
 		ts.add("", indent)
 		ts.add("c", trimmed)
-		return ts, st
+		return ts.done(), st
 	}
 
 	ts.add("", indent)
@@ -47,7 +47,7 @@ func scanMarkdown(st state, line string) ([]token, state) {
 		rest = rest[n:]
 	}
 	scanMarkdownInline(&ts, rest)
-	return ts, st
+	return ts.done(), st
 }
 
 // markdownMarker returns the length of a leading list marker: a bullet

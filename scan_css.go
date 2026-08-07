@@ -26,7 +26,7 @@ func scanCSS(st state, line string) ([]token, state) {
 			n, closed := ts.drain("c", line[i:], "*/")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -108,7 +108,7 @@ func scanCSS(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts, st
+	return ts.done(), st
 }
 
 // isPseudo reports whether s begins with the colon of a pseudo-class or

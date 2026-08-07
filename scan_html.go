@@ -26,7 +26,7 @@ func scanHTML(st state, line string) ([]token, state) {
 			n, closed := ts.drain("c", line[i:], "-->")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -66,13 +66,13 @@ func scanHTML(st state, line string) ([]token, state) {
 			j := strings.IndexByte(line[i+1:], '<')
 			if j < 0 {
 				ts.add("", line[i:])
-				return ts, st
+				return ts.done(), st
 			}
 			ts.add("", line[i:i+j+1])
 			i += j + 1
 		}
 	}
-	return ts, st
+	return ts.done(), st
 }
 
 // scanTagPart reads one piece of the inside of a tag: an attribute, a

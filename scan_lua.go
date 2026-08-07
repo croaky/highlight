@@ -44,7 +44,7 @@ func scanLua(st state, line string) ([]token, state) {
 			n, closed := ts.drain("s", line[i:], "]]")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -52,7 +52,7 @@ func scanLua(st state, line string) ([]token, state) {
 			n, closed := ts.drain("c", line[i:], "]]")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -67,7 +67,7 @@ func scanLua(st state, line string) ([]token, state) {
 			st = stateBlockComment
 		case strings.HasPrefix(line[i:], "--"):
 			ts.add("c", line[i:])
-			return ts, st
+			return ts.done(), st
 		case strings.HasPrefix(line[i:], "[["):
 			ts.add("s", line[i:i+2])
 			i += 2
@@ -107,5 +107,5 @@ func scanLua(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts, st
+	return ts.done(), st
 }

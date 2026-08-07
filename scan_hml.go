@@ -19,7 +19,7 @@ func scanHML(st state, line string) ([]token, state) {
 	indent := line[:len(line)-len(trimmed)]
 	ts.add("", indent)
 	if trimmed == "" {
-		return ts, st
+		return ts.done(), st
 	}
 
 	switch {
@@ -36,7 +36,7 @@ func scanHML(st state, line string) ([]token, state) {
 	default:
 		scanHMLText(&ts, trimmed)
 	}
-	return ts, st
+	return ts.done(), st
 }
 
 // scanHMLTag colors a tag line: %tag as a keyword, its classes and id

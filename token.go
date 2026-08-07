@@ -99,17 +99,63 @@ func scannerFor(name string) scanFunc {
 
 // tokens accumulates a line's tokens, merging runs of the same class
 // so a line of punctuation is one token rather than twenty.
-type tokens []token
+//
+// The trailing run is held apart from the finished tokens and becomes
+// one when the class changes or the line ends. It used to merge by
+// concatenating, which is how this came to account for 92% of the
+// allocations rendering a change made: every scanner's default branch
+// feeds unclassified bytes one at a time, so a run of punctuation
+// allocated once per character and each of those copied the run so far.
+//
+// A run of one piece keeps the caller's string, which is already a slice
+// of the line and costs nothing. Only a run that grew needs a string of
+// its own, and buf is reused for the rest of the line.
+type tokens struct {
+	out   []token
+	class string
+	text  string // the pending run, while it is a single piece
+	buf   []byte // the pending run, once it is more than one
+}
 
+// add emits text as class, merging it into the pending run when the
+// class has not changed.
 func (ts *tokens) add(class, text string) {
 	if text == "" {
 		return
 	}
-	if n := len(*ts); n > 0 && (*ts)[n-1].class == class {
-		(*ts)[n-1].text += text
-		return
+	if ts.text != "" || len(ts.buf) > 0 {
+		if ts.class == class {
+			if len(ts.buf) == 0 {
+				ts.buf = append(ts.buf, ts.text...)
+				ts.text = ""
+			}
+			ts.buf = append(ts.buf, text...)
+			return
+		}
+		ts.flush()
 	}
-	*ts = append(*ts, token{class: class, text: text})
+	ts.class, ts.text = class, text
+}
+
+// flush turns the pending run into a token. A run that never grew is
+// the caller's own string, so only one that did is copied.
+func (ts *tokens) flush() {
+	switch {
+	case len(ts.buf) > 0:
+		ts.out = append(ts.out, token{class: ts.class, text: string(ts.buf)})
+		ts.buf = ts.buf[:0]
+	case ts.text != "":
+		ts.out = append(ts.out, token{class: ts.class, text: ts.text})
+		ts.text = ""
+	}
+}
+
+// done is the line's tokens, the pending run finished. Every scanner
+// returns through it, and nothing reads the tokens before it: a run
+// still being merged is not one to emit.
+func (ts *tokens) done() []token {
+	ts.flush()
+	return ts.out
 }
 
 // drain finishes a carry: it emits s up to and including end and

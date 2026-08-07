@@ -32,7 +32,7 @@ func scanGo(st state, line string) ([]token, state) {
 			n, closed := ts.drain("s", line[i:], "`")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -40,7 +40,7 @@ func scanGo(st state, line string) ([]token, state) {
 			n, closed := ts.drain("c", line[i:], "*/")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -50,7 +50,7 @@ func scanGo(st state, line string) ([]token, state) {
 		switch {
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
 			ts.add("c", line[i:])
-			return ts, st
+			return ts.done(), st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			ts.add("c", "/*")
 			i += 2
@@ -88,5 +88,5 @@ func scanGo(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts, st
+	return ts.done(), st
 }

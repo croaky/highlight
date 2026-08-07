@@ -5,16 +5,12 @@ meant to be a single cibot change: open it, review it, land it, then
 start the next. The numbering is the dependency order, not a priority
 list.
 
-The order follows three rules:
+One rule is left, now that the moves and the measured changes have
+landed:
 
-- Measurement first. A performance change with no benchmark behind it
-  is a guess, so `02` and `08` quote `BenchmarkCode` and `BenchmarkDiff`
-  rather than a reading of the code.
-- Moves before rewrites. `03` and `04` relocate shared code without
-  changing behavior, which makes them cheap to review. Doing them
-  first keeps the big diff in `05` down to the one thing it is for.
 - Decisions last. `09` and `10` change the carry, and `09` needs
-  agreement on what `state` becomes before anybody writes it.
+  agreement on what `state` becomes before anybody writes it. `11` is a
+  decision with nothing scheduled behind it.
 
 Every change runs the `Checkfile` list before it opens:
 

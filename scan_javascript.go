@@ -49,7 +49,7 @@ func scanJS(st state, line string) ([]token, state) {
 			n, closed := ts.drain("s", line[i:], "`")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			// A template literal is a value, so a slash after it
@@ -60,7 +60,7 @@ func scanJS(st state, line string) ([]token, state) {
 			n, closed := ts.drain("c", line[i:], "*/")
 			i += n
 			if !closed {
-				return ts, st
+				return ts.done(), st
 			}
 			st = stateCode
 			continue
@@ -74,7 +74,7 @@ func scanJS(st state, line string) ([]token, state) {
 			continue
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
 			ts.add("c", line[i:])
-			return ts, st
+			return ts.done(), st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			ts.add("c", "/*")
 			i += 2
@@ -124,7 +124,7 @@ func scanJS(st state, line string) ([]token, state) {
 		}
 		prev = c
 	}
-	return ts, st
+	return ts.done(), st
 }
 
 // isJSIdentStart reports whether c can begin a name. The dollar sign
