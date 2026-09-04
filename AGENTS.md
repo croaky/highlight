@@ -49,14 +49,17 @@ split is the design:
 
 ## Checks
 
-The root `Checkfile` is the list, and CI runs it on every push. Run the
-same things before committing:
+The root `Checkfile` is the list, and CI runs it on every push. Read it
+there rather than here, and run it before committing: a second copy of
+the list is one that drifts.
+
+Two of its entries check rather than write, since a CI job that
+rewrote source would have nowhere to put it. Run the writing form
+first, and the check passes:
 
 ```sh
 goimports -local "$(go list -m)" -w .
-go vet ./...
-go test -race -cover ./...
-git ls-files -z '*.go' | xargs -0 gopls check -severity=hint
+dprint fmt
 ```
 
 The package imports nothing outside the standard library. Tests import

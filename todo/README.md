@@ -1,25 +1,14 @@
 # Todo
 
-One file per change, numbered in the order they should land. Each is
-meant to be a single cibot change: open it, review it, land it, then
-start the next. The numbering is the dependency order, not a priority
-list.
+Nothing is planned right now. The next file starts past the highest
+number already used.
 
-Nothing is planned right now. Numbers are positions rather than names,
-so the next file starts past the highest one already used and no gap
-gets closed.
+`AGENTS.md` holds the rules for this directory: one file per change,
+numbered in the dependency order the changes should land in, and
+deleted by the commit that finishes it. Each file is one cibot change:
+open it, review it, land it, then start the next.
 
-Every change runs the `Checkfile` list before it opens:
-
-```sh
-goimports -local "$(go list -m)" -w .
-go vet ./...
-go test -race -cover ./...
-git ls-files -z '*.go' | xargs -0 gopls check -severity=hint
-```
-
-`token_test.go` is the check that matters for most of these: the
-scanners still have to spell the sample files byte for byte. A refactor
-that changes coloring will show up there or in a scanner's table.
-
-Delete a file when its change lands.
+Every change runs the `Checkfile` list before it opens. `token_test.go`
+is the check that matters for most of these: the scanners still have to
+spell the sample files byte for byte. A refactor that changes coloring
+will show up there or in a scanner's table.

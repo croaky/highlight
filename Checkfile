@@ -16,3 +16,24 @@ lint: out=$(goimports -local "$(go list -m)" -l .); if [ -n "$out" ]; then echo 
 # its output is the verdict: awk prints what it read, then fails if it
 # read a line.
 hints: git ls-files -z '*.go' | xargs -0 gopls check -severity=hint | awk '1; END { exit (NR > 0) }'
+
+# A package that exports Code and Diff and keeps everything else
+# unexported is one where an unreachable function is a leftover, not an
+# API somebody outside calls. -test so a helper only a test reaches
+# counts as reached. It exits 0 either way, so awk reads its output as
+# the verdict, as hints does.
+deadcode: deadcode -test ./... 2>&1 | awk '1; END { exit (NR > 0) }'
+
+# What gofmt does not reach: the Markdown, which is where the rules an
+# agent reads live. dprint.json says which plugin at which hash, so a
+# formatter upgrade is a commit and not a Tuesday. It excludes
+# testdata/, whose files are scanner input rather than prose: a
+# formatter that rewrote sample.md would change what the tests scan.
+fmt: dprint check
+
+# The shell nobody compiles. scripts/tag pushes a tag to the GitHub
+# mirror from a laptop, so a mistake in it is a published version
+# nobody can unpublish. Named as a path because it carries no
+# extension, and testdata/sample.sh is deliberately excluded: it is
+# scanner input, not a script this repo runs.
+shellcheck: git ls-files -z 'scripts/*' | xargs -0 shellcheck

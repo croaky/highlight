@@ -11,8 +11,9 @@ highlight.Diff("main.go", patch)    // a unified-diff patch
 
 That generates CSS classes `k` keywords, `n` names, `s` strings, `m`
 numbers, `c` comments and a few for a diff's rows: `gi` inserted,
-`gd` deleted, `gu` hunk header, `gc` context. Colors are yours to style.
-Those names are the contract.
+`gd` deleted, `gu` hunk header, `gc` context. `Diff` wraps the whole
+patch in one `diff` span. Colors are yours to style. Those names are
+the contract.
 
 It is fast and small because it is deliberately incomplete and covers only a few
 curated languages. A format with no scanner is escaped and rendered uncolored,
