@@ -19,6 +19,14 @@ func Code(w io.Writer, name, src string) error {
 
 	var buf bytes.Buffer
 	buf.Grow(len(src) + len(src)/4)
+	if scan == nil {
+		// No scanner means no color and no carry, so the lines need
+		// no split. One pass escapes the whole source, and the
+		// newlines come through as they are.
+		writeEscaped(&buf, src)
+		_, err := w.Write(buf.Bytes())
+		return err
+	}
 	var st state
 	first := true
 	for line := range strings.SplitSeq(src, "\n") {

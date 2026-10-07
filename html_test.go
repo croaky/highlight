@@ -64,6 +64,23 @@ func TestCodeEscapes(t *testing.T) {
 	}
 }
 
+// TestCodeUncolored checks the path with no scanner. A format with no
+// scanner gets the escaped source and nothing else: no span, and every
+// newline kept where the source has it.
+func TestCodeUncolored(t *testing.T) {
+	is := is.NewRelaxed(t)
+
+	names, err := filepath.Glob("testdata/sample.*")
+	is.NoErr(err)
+	for _, name := range names {
+		src, err := os.ReadFile(name)
+		is.NoErr(err)
+		var got strings.Builder
+		is.NoErr(Code(&got, "notes.unknownext", string(src)))
+		is.Eq(got.String(), template.HTMLEscapeString(string(src)))
+	}
+}
+
 // TestWriteEscaped pins the replacements to the ones html/template
 // writes. The tests here and downstream spell out expected HTML, so a
 // table that is merely equivalent is still a break.
@@ -115,5 +132,23 @@ func BenchmarkCode(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+// BenchmarkCodeUncolored runs the emitter over a sample with a name no
+// scanner matches. A page shows files of any format, so the path with
+// no scanner has a cost of its own to watch.
+func BenchmarkCodeUncolored(b *testing.B) {
+	src, err := os.ReadFile("testdata/sample.go")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.SetBytes(int64(len(src)))
+
+	for b.Loop() {
+		if err := Code(io.Discard, "notes.unknownext", string(src)); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
