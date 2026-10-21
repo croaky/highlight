@@ -122,6 +122,8 @@ func scannerFor(name string) scanFunc {
 		return scanMarkdown
 	case "hml", "haml":
 		return scanHML
+	case "patch", "diff":
+		return scanPatch
 	}
 	return nil
 }

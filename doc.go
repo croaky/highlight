@@ -2,7 +2,7 @@
 //
 // It is a hand-written, line-oriented scanner per language over a
 // shared token type, for a curated set of formats: Go, sh, SQL, CSS,
-// JavaScript, C, Ruby, JSON, Lua, HTML, Markdown, and hml. A format it
+// JavaScript, C, Ruby, JSON, Lua, HTML, Markdown, patch files, and hml. A format it
 // has no scanner for is escaped and rendered uncolored, so callers can
 // mix.
 //

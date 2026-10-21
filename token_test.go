@@ -68,6 +68,7 @@ func TestScannerForNames(t *testing.T) {
 		"person.rb", "ruby",
 		"README.md", "markdown",
 		"show.hml", "haml",
+		"uni-go.patch", "change.diff", "patch",
 	} {
 		is.NotNil(scannerFor(name))
 	}

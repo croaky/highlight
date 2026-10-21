@@ -2,7 +2,7 @@
 
 A small syntax highlighter for server-rendered HTML. One line-oriented scanner
 per language: Go, SQL, CSS, JavaScript, C, Ruby, JSON, Lua, HTML, Markdown,
-shell, and [hml](https://github.com/croaky/hml).
+shell, patch files, and [hml](https://github.com/croaky/hml).
 
 ```go
 highlight.Code(w, "main.go", src)   // or "go", from a markdown fence
