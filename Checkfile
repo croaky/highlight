@@ -44,7 +44,7 @@ fmt: dprint check
 # scanner input, not a script this repo runs.
 shellcheck: git ls-files -z 'scripts/*' | xargs -0 shellcheck
 
-weekly_govulncheck: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+weekly_govulncheck: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
 # The title a change needs to merge, and the body rules that come
 # with it. sockeye reads this from main at merge.
