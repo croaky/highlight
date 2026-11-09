@@ -26,17 +26,17 @@ func scanPatch(st state, line string) ([]token, state) {
 	var ts tokens
 	switch {
 	case strings.HasPrefix(line, "@@"):
-		ts.add("n", line)
+		ts.add(nameClass, line)
 	case strings.HasPrefix(line, "diff --git "),
 		strings.HasPrefix(line, "--- "),
 		strings.HasPrefix(line, "+++ "):
-		ts.add("k", line)
+		ts.add(keywordClass, line)
 	case hasAnyPrefix(line, patchMeta):
-		ts.add("c", line)
+		ts.add(commentClass, line)
 	case strings.HasPrefix(line, "+"):
-		ts.add("s", line)
+		ts.add(stringClass, line)
 	case strings.HasPrefix(line, "-"):
-		ts.add("m", line)
+		ts.add(numberClass, line)
 	default:
 		ts.add("", line)
 	}

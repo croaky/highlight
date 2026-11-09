@@ -41,7 +41,7 @@ func scanLua(st state, line string) ([]token, state) {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
-			n, closed := ts.drain("s", line[i:], "]]")
+			n, closed := ts.drain(stringClass, line[i:], "]]")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -49,7 +49,7 @@ func scanLua(st state, line string) ([]token, state) {
 			st = stateCode
 			continue
 		case stateBlockComment:
-			n, closed := ts.drain("c", line[i:], "]]")
+			n, closed := ts.drain(commentClass, line[i:], "]]")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -62,23 +62,23 @@ func scanLua(st state, line string) ([]token, state) {
 		switch {
 		case strings.HasPrefix(line[i:], "--[["):
 			// Before the line comment below, which it starts with.
-			ts.add("c", line[i:i+4])
+			ts.add(commentClass, line[i:i+4])
 			i += 4
 			st = stateBlockComment
 		case strings.HasPrefix(line[i:], "--"):
-			ts.add("c", line[i:])
+			ts.add(commentClass, line[i:])
 			return ts.done(), st
 		case strings.HasPrefix(line[i:], "[["):
-			ts.add("s", line[i:i+2])
+			ts.add(stringClass, line[i:i+2])
 			i += 2
 			st = stateRawString
 		case c == '"' || c == '\'':
 			n := scanQuoted(line[i:], c)
-			ts.add("s", line[i:i+n])
+			ts.add(stringClass, line[i:i+n])
 			i += n
 		case isDigit(c) || (c == '.' && i+1 < len(line) && isDigit(line[i+1])):
 			n := scanNumber(line[i:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 		case isIdentStart(c):
 			j := i + 1
@@ -88,16 +88,16 @@ func scanLua(st state, line string) ([]token, state) {
 			word := line[i:j]
 			switch {
 			case luaKeywords[word]:
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			case luaNames[word]:
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			case j < len(line) && line[j] == '(':
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			case j < len(line) && (line[j] == '"' || line[j] == '\''):
 				// A call whose only argument is a string may drop
 				// the parens: require("x") and require"x" are the
 				// same call.
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			default:
 				ts.add("", word)
 			}

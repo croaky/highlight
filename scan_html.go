@@ -23,7 +23,7 @@ func scanHTML(st state, line string) ([]token, state) {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateBlockComment:
-			n, closed := ts.drain("c", line[i:], "-->")
+			n, closed := ts.drain(commentClass, line[i:], "-->")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -41,7 +41,7 @@ func scanHTML(st state, line string) ([]token, state) {
 
 		switch {
 		case strings.HasPrefix(line[i:], "<!--"):
-			ts.add("c", line[i:i+4])
+			ts.add(commentClass, line[i:i+4])
 			i += 4
 			st = stateBlockComment
 		case line[i] == '<' && i+1 < len(line) && isTagStart(line[i+1]):
@@ -57,7 +57,7 @@ func scanHTML(st state, line string) ([]token, state) {
 			for k < len(line) && isTagName(line[k]) {
 				k++
 			}
-			ts.add("k", line[j:k])
+			ts.add(keywordClass, line[j:k])
 			i = k
 			st = stateTag
 		default:
@@ -89,14 +89,14 @@ func scanTagPart(ts *tokens, s string) (int, bool) {
 		return 2, true
 	case c == '"' || c == '\'':
 		n := scanQuoted(s, c)
-		ts.add("s", s[:n])
+		ts.add(stringClass, s[:n])
 		return n, false
 	case isTagName(c) && !isDigit(c):
 		i := 1
 		for i < len(s) && isTagName(s[i]) {
 			i++
 		}
-		ts.add("n", s[:i])
+		ts.add(nameClass, s[:i])
 		return i, false
 	default:
 		// A space, an equals sign, or an unquoted value's first

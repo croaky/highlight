@@ -21,21 +21,21 @@ func scanShell(st state, line string) ([]token, state) {
 		switch st {
 		case stateSingleQuote:
 			if j := strings.IndexByte(line[i:], '\''); j >= 0 {
-				ts.add("s", line[i:i+j+1])
+				ts.add(stringClass, line[i:i+j+1])
 				i += j + 1
 				st = stateCode
 				continue
 			}
-			ts.add("s", line[i:])
+			ts.add(stringClass, line[i:])
 			return ts.done(), st
 		case stateDoubleQuote:
 			if n, closed := scanDelimited(line[i:], '"'); closed {
-				ts.add("s", line[i:i+n])
+				ts.add(stringClass, line[i:i+n])
 				i += n
 				st = stateCode
 				continue
 			}
-			ts.add("s", line[i:])
+			ts.add(stringClass, line[i:])
 			return ts.done(), st
 		}
 
@@ -44,14 +44,14 @@ func scanShell(st state, line string) ([]token, state) {
 		case c == '#' && (i == 0 || isSpace(line[i-1])):
 			// A # elsewhere is part of a word: ${x#y}, a fragment in
 			// a URL.
-			ts.add("c", line[i:])
+			ts.add(commentClass, line[i:])
 			return ts.done(), st
 		case c == '\'':
-			ts.add("s", "'")
+			ts.add(stringClass, "'")
 			i++
 			st = stateSingleQuote
 		case c == '"':
-			ts.add("s", `"`)
+			ts.add(stringClass, `"`)
 			i++
 			st = stateDoubleQuote
 		case c == '$':
@@ -62,11 +62,11 @@ func scanShell(st state, line string) ([]token, state) {
 			if j == i+1 && j < len(line) && (line[j] == '{' || line[j] == '(') {
 				j++
 			}
-			ts.add("n", line[i:j])
+			ts.add(nameClass, line[i:j])
 			i = j
 		case isDigit(c) && (i == 0 || !isIdent(line[i-1])):
 			n := scanNumber(line[i:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 		case isIdentStart(c):
 			j := i + 1
@@ -74,7 +74,7 @@ func scanShell(st state, line string) ([]token, state) {
 				j++
 			}
 			if word := line[i:j]; shKeywords[word] {
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			} else {
 				ts.add("", word)
 			}

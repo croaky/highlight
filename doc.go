@@ -50,4 +50,10 @@
 //
 // The ten class names are the whole contract with a stylesheet, and
 // there is no shipped palette: colors are the consuming site's.
+//
+// Each class name is a const whose name ends in Class: the five token
+// classes in token.go, and the five diff classes in html.go. No other
+// code spells a class. So a CSS check that reads Go, such as
+// github.com/croaky/cssunused with -module, finds every class this
+// package writes.
 package highlight

@@ -40,6 +40,17 @@ func Code(w io.Writer, name, src string) error {
 	return err
 }
 
+// The diff classes, each named once, as the token classes are in
+// token.go. Diff wraps a patch in diffClass and each row in one of the
+// other four.
+const (
+	diffClass     = "diff"
+	hunkClass     = "gu"
+	insertedClass = "gi"
+	deletedClass  = "gd"
+	contextClass  = "gc"
+)
+
 // Diff renders a unified-diff patch with two layers of coloring: each
 // line carries a row-wide diff class (gi inserted, gd deleted, gu hunk
 // header, gc context) and, underneath, its content is tokenized by the
@@ -59,7 +70,7 @@ func Diff(filename, patch string) template.HTML {
 
 	var buf bytes.Buffer
 	buf.Grow(len(patch) + len(patch)/4)
-	buf.WriteString(`<span class=diff>`)
+	buf.WriteString(`<span class=` + diffClass + `>`)
 	var oldSt, newSt state
 	for line := range strings.SplitSeq(patch, "\n") {
 		if line == "" {
@@ -74,15 +85,15 @@ func Diff(filename, patch string) template.HTML {
 				// The file jumped, so neither carry means anything.
 				oldSt, newSt = stateCode, stateCode
 			}
-			buf.WriteString(`<span class=gu>`)
+			buf.WriteString(`<span class=` + hunkClass + `>`)
 			writeEscaped(&buf, line)
 			buf.WriteString(`</span>`)
 		case '+':
-			buf.WriteString(`<span class=gi>+`)
+			buf.WriteString(`<span class=` + insertedClass + `>+`)
 			writeContent(&buf, scan, &newSt, line[1:])
 			buf.WriteString(`</span>`)
 		case '-':
-			buf.WriteString(`<span class=gd>-`)
+			buf.WriteString(`<span class=` + deletedClass + `>-`)
 			writeContent(&buf, scan, &oldSt, line[1:])
 			buf.WriteString(`</span>`)
 		default:
@@ -93,7 +104,7 @@ func Diff(filename, patch string) template.HTML {
 			if line[0] == ' ' {
 				prefix, content = " ", line[1:]
 			}
-			buf.WriteString(`<span class=gc>`)
+			buf.WriteString(`<span class=` + contextClass + `>`)
 			buf.WriteString(prefix)
 			same := oldSt == newSt
 			if !same && scan != nil {

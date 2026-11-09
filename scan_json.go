@@ -19,7 +19,7 @@ func scanJSON(st state, line string) ([]token, state) {
 	var ts tokens
 	for i := 0; i < len(line); {
 		if st == stateBlockComment {
-			n, closed := ts.drain("c", line[i:], "*/")
+			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -31,11 +31,11 @@ func scanJSON(st state, line string) ([]token, state) {
 		c := line[i]
 		switch {
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
-			ts.add("c", line[i:])
+			ts.add(commentClass, line[i:])
 			return ts.done(), st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			st = stateBlockComment
-			ts.add("c", line[i:i+2])
+			ts.add(commentClass, line[i:i+2])
 			i += 2
 		case c == '"':
 			n := scanQuoted(line[i:], '"')
@@ -45,12 +45,12 @@ func scanJSON(st state, line string) ([]token, state) {
 			// The minus belongs to the number it signs. Nothing in
 			// JSON subtracts, so there is no other reading.
 			n := 1 + scanNumber(line[i+1:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 		case isIdentStart(c):
 			j := identEnd(line, i+1)
 			if word := line[i:j]; jsonWords[word] {
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			} else {
 				ts.add("", word)
 			}
@@ -73,10 +73,10 @@ func jsonStringClass(rest string) string {
 		switch {
 		case isSpace(rest[i]):
 		case rest[i] == ':':
-			return "n"
+			return nameClass
 		default:
-			return "s"
+			return stringClass
 		}
 	}
-	return "s"
+	return stringClass
 }

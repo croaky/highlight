@@ -54,7 +54,7 @@ line:
 			// A percent literal or a regex left open. Both end at
 			// their delimiter, and neither nests across a line.
 			if j := strings.IndexAny(line[i:], ")]}>/"); j >= 0 {
-				ts.add("s", line[i:i+j+1])
+				ts.add(stringClass, line[i:i+j+1])
 				i += j + 1
 				st = stateCode
 				// The literal that just closed is a value, so a
@@ -62,13 +62,13 @@ line:
 				operand = true
 				continue
 			}
-			ts.add("s", line[i:])
+			ts.add(stringClass, line[i:])
 			break line
 		case kindHeredoc:
 			// The body is the whole line whatever it holds, and so
 			// is the terminator, which belongs to the literal it
 			// ends.
-			ts.add("s", line)
+			ts.add(stringClass, line)
 			if heredocEnds(st, line) {
 				st = st.afterHeredoc()
 			}
@@ -80,16 +80,16 @@ line:
 		case c == '#':
 			// Not #{...}: interpolation is only inside a string,
 			// and a scan is never in code there.
-			ts.add("c", line[i:])
+			ts.add(commentClass, line[i:])
 			break line
 		case c == '"' || c == '\'' || c == '`':
 			n := scanQuoted(line[i:], c)
-			ts.add("s", line[i:i+n])
+			ts.add(stringClass, line[i:i+n])
 			i += n
 			operand = true
 		case isHeredocStart(line[i:]):
 			n := heredocTagLen(line[i:])
-			ts.add("s", line[i:i+n])
+			ts.add(stringClass, line[i:i+n])
 			pending = pending.queueHeredoc(line[i : i+n])
 			i += n
 			// The opener stands for the body, which is a string, so
@@ -97,7 +97,7 @@ line:
 			operand = true
 		case c == '%' && isPercentLiteral(line[i:]):
 			n, closed := scanDelimited(line[i+2:], closerFor(line[i+2]))
-			ts.add("s", line[i:i+2+n])
+			ts.add(stringClass, line[i:i+2+n])
 			i += 2 + n
 			if !closed {
 				st = stateRawString
@@ -105,7 +105,7 @@ line:
 			operand = true
 		case c == '/' && !operand:
 			if n := scanRegex(line[i:]); n > 0 {
-				ts.add("s", line[i:i+n])
+				ts.add(stringClass, line[i:i+n])
 				i += n
 				operand = true
 				break
@@ -128,7 +128,7 @@ line:
 				// :"two words" is a symbol too.
 				n = 1 + scanQuoted(line[i+1:], q)
 			}
-			ts.add("n", line[i:i+n])
+			ts.add(nameClass, line[i:i+n])
 			i += n
 			operand = true
 		case c == '@' || c == '$':
@@ -139,12 +139,12 @@ line:
 				j++
 			}
 			n := j - i + rubyIdentLen(line[j:])
-			ts.add("n", line[i:i+n])
+			ts.add(nameClass, line[i:i+n])
 			i += n
 			operand = true
 		case isDigit(c):
 			n := scanNumber(line[i:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 			operand = true
 		case isIdentStart(c):
@@ -153,18 +153,18 @@ line:
 			rest := line[i+n:]
 			switch {
 			case rubyKeywords[word]:
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			case word[0] >= 'A' && word[0] <= 'Z':
 				// A constant: a class, a module, or a constant
 				// proper. Ruby tells them apart by the capital
 				// and so can a reader.
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			case strings.HasPrefix(rest, "("):
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			case strings.HasPrefix(rest, ":") && !strings.HasPrefix(rest, "::"):
 				// A hash key written as a label. The colon is
 				// punctuation, the way it is in JSON.
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			default:
 				ts.add("", word)
 			}

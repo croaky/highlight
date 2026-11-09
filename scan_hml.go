@@ -24,13 +24,13 @@ func scanHML(st state, line string) ([]token, state) {
 
 	switch {
 	case strings.HasPrefix(trimmed, "-#"):
-		ts.add("c", trimmed)
+		ts.add(commentClass, trimmed)
 	case trimmed[0] == '-' || trimmed[0] == '=':
-		ts.add("k", trimmed[:1])
+		ts.add(keywordClass, trimmed[:1])
 		scanHMLExpr(&ts, trimmed[1:])
 	case trimmed[0] == ':':
 		// A filter block header: :javascript, :css.
-		ts.add("k", trimmed)
+		ts.add(keywordClass, trimmed)
 	case trimmed[0] == '%' || trimmed[0] == '.' || trimmed[0] == '#':
 		scanHMLTag(&ts, trimmed)
 	default:
@@ -48,7 +48,7 @@ func scanHMLTag(ts *tokens, s string) {
 		for j < len(s) && isIdent(s[j]) {
 			j++
 		}
-		ts.add("k", s[:j])
+		ts.add(keywordClass, s[:j])
 		i = j
 	}
 	for i < len(s) && (s[i] == '.' || s[i] == '#') {
@@ -56,7 +56,7 @@ func scanHMLTag(ts *tokens, s string) {
 		for j < len(s) && (isIdent(s[j]) || s[j] == '-') {
 			j++
 		}
-		ts.add("n", s[i:j])
+		ts.add(nameClass, s[i:j])
 		i = j
 	}
 
@@ -64,7 +64,7 @@ func scanHMLTag(ts *tokens, s string) {
 	switch {
 	case rest == "":
 	case rest[0] == '=':
-		ts.add("k", "=")
+		ts.add(keywordClass, "=")
 		scanHMLExpr(ts, rest[1:])
 	case rest[0] == '{':
 		scanHMLExpr(ts, rest)
@@ -81,11 +81,11 @@ func scanHMLExpr(ts *tokens, s string) {
 		switch {
 		case c == '"' || c == '\'':
 			n := scanQuoted(s[i:], c)
-			ts.add("s", s[i:i+n])
+			ts.add(stringClass, s[i:i+n])
 			i += n
 		case isDigit(c) && (i == 0 || !isIdent(s[i-1])):
 			n := scanNumber(s[i:])
-			ts.add("m", s[i:i+n])
+			ts.add(numberClass, s[i:i+n])
 			i += n
 		case isIdentStart(c):
 			j := i + 1
@@ -95,9 +95,9 @@ func scanHMLExpr(ts *tokens, s string) {
 			word := s[i:j]
 			switch {
 			case hmlKeywords[word]:
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			case j < len(s) && s[j] == '(':
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			default:
 				ts.add("", word)
 			}
@@ -124,7 +124,7 @@ func scanHMLText(ts *tokens, s string) {
 			return
 		}
 		ts.add("", s[:i])
-		ts.add("n", s[i:i+j+1])
+		ts.add(nameClass, s[i:i+j+1])
 		s = s[i+j+1:]
 	}
 }

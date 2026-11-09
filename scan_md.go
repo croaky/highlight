@@ -17,7 +17,7 @@ func scanMarkdown(st state, line string) ([]token, state) {
 
 	if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
 		ts.add("", indent)
-		ts.add("c", trimmed)
+		ts.add(commentClass, trimmed)
 		if st == stateFence {
 			return ts.done(), stateCode
 		}
@@ -32,18 +32,18 @@ func scanMarkdown(st state, line string) ([]token, state) {
 	switch {
 	case strings.HasPrefix(trimmed, "#"):
 		ts.add("", indent)
-		ts.add("k", trimmed)
+		ts.add(keywordClass, trimmed)
 		return ts.done(), st
 	case strings.HasPrefix(trimmed, ">"):
 		ts.add("", indent)
-		ts.add("c", trimmed)
+		ts.add(commentClass, trimmed)
 		return ts.done(), st
 	}
 
 	ts.add("", indent)
 	rest := trimmed
 	if n := markdownMarker(rest); n > 0 {
-		ts.add("k", rest[:n])
+		ts.add(keywordClass, rest[:n])
 		rest = rest[n:]
 	}
 	scanMarkdownInline(&ts, rest)
@@ -74,7 +74,7 @@ func scanMarkdownInline(ts *tokens, s string) {
 		switch s[i] {
 		case '`':
 			if j := strings.IndexByte(s[i+1:], '`'); j >= 0 {
-				ts.add("s", s[i:i+j+2])
+				ts.add(stringClass, s[i:i+j+2])
 				i += j + 2
 				continue
 			}
@@ -83,7 +83,7 @@ func scanMarkdownInline(ts *tokens, s string) {
 		case '[':
 			if j := strings.IndexByte(s[i:], ']'); j > 0 {
 				ts.add("", "[")
-				ts.add("n", s[i+1:i+j])
+				ts.add(nameClass, s[i+1:i+j])
 				ts.add("", "]")
 				i += j + 1
 				continue

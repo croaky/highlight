@@ -29,7 +29,7 @@ func scanGo(st state, line string) ([]token, state) {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
-			n, closed := ts.drain("s", line[i:], "`")
+			n, closed := ts.drain(stringClass, line[i:], "`")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -37,7 +37,7 @@ func scanGo(st state, line string) ([]token, state) {
 			st = stateCode
 			continue
 		case stateBlockComment:
-			n, closed := ts.drain("c", line[i:], "*/")
+			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -49,36 +49,36 @@ func scanGo(st state, line string) ([]token, state) {
 		c := line[i]
 		switch {
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
-			ts.add("c", line[i:])
+			ts.add(commentClass, line[i:])
 			return ts.done(), st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
-			ts.add("c", "/*")
+			ts.add(commentClass, "/*")
 			i += 2
 			st = stateBlockComment
 		case c == '`':
-			ts.add("s", "`")
+			ts.add(stringClass, "`")
 			i++
 			st = stateRawString
 		case c == '"' || c == '\'':
 			// An interpreted string or a rune literal cannot span
 			// lines in Go, so an unterminated one ends at the newline.
 			n := scanQuoted(line[i:], c)
-			ts.add("s", line[i:i+n])
+			ts.add(stringClass, line[i:i+n])
 			i += n
 		case isDigit(c) || (c == '.' && i+1 < len(line) && isDigit(line[i+1])):
 			n := scanNumber(line[i:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 		case isIdentStart(c):
 			j := identEnd(line, i+1)
 			word := line[i:j]
 			switch {
 			case goKeywords[word]:
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			case goNames[word]:
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			case j < len(line) && line[j] == '(':
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			default:
 				ts.add("", word)
 			}

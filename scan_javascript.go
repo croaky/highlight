@@ -48,7 +48,7 @@ func scanJS(st state, line string) ([]token, state) {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
-			n, closed := ts.drain("s", line[i:], "`")
+			n, closed := ts.drain(stringClass, line[i:], "`")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -61,7 +61,7 @@ func scanJS(st state, line string) ([]token, state) {
 			operand = true
 			continue
 		case stateBlockComment:
-			n, closed := ts.drain("c", line[i:], "*/")
+			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -77,10 +77,10 @@ func scanJS(st state, line string) ([]token, state) {
 			i++
 			continue
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
-			ts.add("c", line[i:])
+			ts.add(commentClass, line[i:])
 			return ts.done(), st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
-			ts.add("c", "/*")
+			ts.add(commentClass, "/*")
 			i += 2
 			st = stateBlockComment
 			operand = false
@@ -88,7 +88,7 @@ func scanJS(st state, line string) ([]token, state) {
 			// A regex, if it closes on this line. One that does not is
 			// a division whose right side is still being typed.
 			if n := scanRegex(line[i:]); n > 0 {
-				ts.add("s", line[i:i+n])
+				ts.add(stringClass, line[i:i+n])
 				i += n
 				operand = true
 				break
@@ -97,7 +97,7 @@ func scanJS(st state, line string) ([]token, state) {
 			i++
 			operand = false
 		case c == '`':
-			ts.add("s", "`")
+			ts.add(stringClass, "`")
 			i++
 			st = stateRawString
 			// Not a value yet. The branch above sets it when the
@@ -105,12 +105,12 @@ func scanJS(st state, line string) ([]token, state) {
 			operand = false
 		case c == '"' || c == '\'':
 			n := scanQuoted(line[i:], c)
-			ts.add("s", line[i:i+n])
+			ts.add(stringClass, line[i:i+n])
 			i += n
 			operand = true
 		case isDigit(c) || (c == '.' && i+1 < len(line) && isDigit(line[i+1])):
 			n := scanNumber(line[i:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 			operand = true
 		case isJSIdentStart(c):
@@ -121,11 +121,11 @@ func scanJS(st state, line string) ([]token, state) {
 			word := line[i:j]
 			switch {
 			case jsKeywords[word]:
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			case jsNames[word]:
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			case j < len(line) && line[j] == '(':
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			default:
 				ts.add("", word)
 			}

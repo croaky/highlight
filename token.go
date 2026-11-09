@@ -14,6 +14,18 @@ type token struct {
 	text  string
 }
 
+// The token classes, each named once. A scanner passes one of these,
+// never a literal, so the classes the package writes are the ones
+// listed here. A CSS check that reads Go finds them by the Class in
+// each name.
+const (
+	keywordClass = "k"
+	nameClass    = "n"
+	stringClass  = "s"
+	numberClass  = "m"
+	commentClass = "c"
+)
+
 // words is a set of the words given, for the keyword and name lists a
 // scanner matches against. A list is the part of a scanner most likely
 // to be edited, so it is spelled as the words and nothing else.

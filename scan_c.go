@@ -35,7 +35,7 @@ func scanC(st state, line string) ([]token, state) {
 	}
 	for i < len(line) {
 		if st == stateBlockComment {
-			n, closed := ts.drain("c", line[i:], "*/")
+			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -47,28 +47,28 @@ func scanC(st state, line string) ([]token, state) {
 		c := line[i]
 		switch {
 		case strings.HasPrefix(line[i:], "/*"):
-			ts.add("c", line[i:i+2])
+			ts.add(commentClass, line[i:i+2])
 			i += 2
 			st = stateBlockComment
 		case strings.HasPrefix(line[i:], "//"):
-			ts.add("c", line[i:])
+			ts.add(commentClass, line[i:])
 			return ts.done(), st
 		case c == '"' || c == '\'':
 			n := scanQuoted(line[i:], c)
-			ts.add("s", line[i:i+n])
+			ts.add(stringClass, line[i:i+n])
 			i += n
 		case isDigit(c) || (c == '.' && i+1 < len(line) && isDigit(line[i+1])):
 			n := scanNumber(line[i:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 		case isIdentStart(c):
 			j := identEnd(line, i+1)
 			word := line[i:j]
 			switch {
 			case cKeywords[word]:
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 			case j < len(line) && line[j] == '(':
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			default:
 				ts.add("", word)
 			}
@@ -108,7 +108,7 @@ func scanCDirective(ts *tokens, line string) int {
 	for k < len(line) && isIdent(line[k]) {
 		k++
 	}
-	ts.add("k", line[i:k])
+	ts.add(keywordClass, line[i:k])
 
 	switch line[j:k] {
 	case "include", "include_next":
@@ -119,7 +119,7 @@ func scanCDirective(ts *tokens, line string) int {
 		if p < len(line) && line[p] == '<' {
 			if q := strings.IndexByte(line[p:], '>'); q >= 0 {
 				ts.add("", line[k:p])
-				ts.add("s", line[p:p+q+1])
+				ts.add(stringClass, line[p:p+q+1])
 				return p + q + 1
 			}
 		}

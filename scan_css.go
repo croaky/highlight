@@ -23,7 +23,7 @@ func scanCSS(st state, line string) ([]token, state) {
 	value := false
 	for i := 0; i < len(line); {
 		if st == stateBlockComment {
-			n, closed := ts.drain("c", line[i:], "*/")
+			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
 				return ts.done(), st
@@ -35,28 +35,28 @@ func scanCSS(st state, line string) ([]token, state) {
 		c := line[i]
 		switch {
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
-			ts.add("c", "/*")
+			ts.add(commentClass, "/*")
 			i += 2
 			st = stateBlockComment
 		case c == '"' || c == '\'':
 			n := scanQuoted(line[i:], c)
-			ts.add("s", line[i:i+n])
+			ts.add(stringClass, line[i:i+n])
 			i += n
 		case c == '@':
 			n := 1 + scanCSSIdent(line[i+1:])
-			ts.add("k", line[i:i+n])
+			ts.add(keywordClass, line[i:i+n])
 			i += n
 		case c == '#':
 			// A color, or the id of a selector. Hex is the ambiguity:
 			// #fff is a color and #f00d is not an id, so the digits and
 			// their count decide.
 			if n := scanHexColor(line[i:]); n > 0 {
-				ts.add("m", line[i:i+n])
+				ts.add(numberClass, line[i:i+n])
 				i += n
 				break
 			}
 			n := 1 + scanCSSIdent(line[i+1:])
-			ts.add("n", line[i:i+n])
+			ts.add(nameClass, line[i:i+n])
 			i += n
 		case isPseudo(line[i:]):
 			// A pseudo-class or pseudo-element, which belongs to the
@@ -67,37 +67,37 @@ func scanCSS(st state, line string) ([]token, state) {
 				j++
 			}
 			j += scanCSSIdent(line[j:])
-			ts.add("n", line[i:j])
+			ts.add(nameClass, line[i:j])
 			i = j
 		case (c == '.' || c == '-') && i+1 < len(line) && isDigit(line[i+1]):
 			n := 1 + scanNumber(line[i+1:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 		case isDigit(c):
 			n := scanNumber(line[i:])
-			ts.add("m", line[i:i+n])
+			ts.add(numberClass, line[i:i+n])
 			i += n
 		case c == '.' && i+1 < len(line) && isCSSIdentStart(line[i+1]):
 			// The dot is part of the name: .diff-file is one thing to
 			// read, not a name behind an operator.
 			n := 1 + scanCSSIdent(line[i+1:])
-			ts.add("n", line[i:i+n])
+			ts.add(nameClass, line[i:i+n])
 			i += n
 		case isCSSIdentStart(c):
 			j := i + scanCSSIdent(line[i:])
 			word := line[i:j]
 			switch {
 			case j < len(line) && line[j] == ':' && !isPseudo(line[j:]):
-				ts.add("k", word)
+				ts.add(keywordClass, word)
 				value = true
 			case value && strings.HasPrefix(word, "--"):
 				// A custom property being read. It is a name here and a
 				// property where it is declared, which is what it is.
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			case value:
 				ts.add("", word)
 			default:
-				ts.add("n", word)
+				ts.add(nameClass, word)
 			}
 			i = j
 		default:
