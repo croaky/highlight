@@ -168,20 +168,28 @@ it a real subject line before the merge.
 
 ## Commits
 
-- Subject: `scope: imperative summary`, at most 50 characters, lowercase
+- Subject: `scope: imperative summary`, at most 72 characters, lowercase
   except proper nouns, no trailing period.
 - The scope is what the change acts on: the language (`go:`, `css:`,
-  `sql:`), or the layer (`token:`, `html:`, `doc:`, `todo:`, `ci:`).
-  Not `highlight:` — every commit here is highlight.
-- Blank line, then a body hard-wrapped at 72, in sentences with
-  punctuation.
-- Include _why_, not just _what_, and cut whatever is inessential. See
-  `git log` for the scopes in use and for examples.
+  `sql:`, `ruby:`, `patch:`), or the layer (`token:`, `html:`). Here
+  `go:` names the Go lexer. A Go version update takes `deps:`. Not
+  `highlight:` or `high:`, because every commit here is highlight.
+- Each repo also uses these scopes: `security:` for a fix to a security
+  finding, `deps:` for a dependency or the Go version, `doc:` for the
+  docs, `todo:` for a plan, and `ci:` for the Checkfile and its checks.
+- A change that acts on more than one area takes the scope whose
+  behavior changed. Write two scopes, with a comma between them, only
+  when each one changed: `token, html:`.
+- The `merge:` line in the root `Checkfile` checks the change title at
+  merge. It caps the text after the scope at 64 characters.
+- Include _why_, not just _what_. Hard-wrap the body at 72.
 - Write the subject for a teammate who has not read the code. Name the
   language, the class, or the output, not a term the change makes up.
 - Write the body as a change description (below). The first push of a
   branch with one commit copies the commit message to the change.
-- Sign your work with a `Co-Authored-By` trailer.
+- Sign your work with a `Co-Authored-By` trailer at the end of the
+  message, after a blank line. A trailer on the line after the subject
+  becomes part of the subject.
 
 ## Change descriptions
 
