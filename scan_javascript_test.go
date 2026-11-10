@@ -80,6 +80,15 @@ func TestScanJS(t *testing.T) {
 			want: "k:const|: half = total / |m:2|:;",
 		},
 		{
+			// After one look-ahead fails, every later slash on the
+			// line divides. A second look-ahead would read the same
+			// bytes again, and a line of `/[` repeated would cost the
+			// square of its length.
+			name: "no regex after an unclosed one",
+			line: "/[ /x/",
+			want: ":/[ /x/",
+		},
+		{
 			// A literal ends an operand, so a slash after one divides.
 			// This compared the byte the previous token began with,
 			// which for a string is its opening quote, so no literal

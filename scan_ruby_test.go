@@ -1,6 +1,7 @@
 package highlight
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/croaky/is"
@@ -94,6 +95,13 @@ func TestScanRuby(t *testing.T) {
 			want: `:  |k:if|: name =~ |s:/\A[a-z]+\z/|: |k:then|: n / |m:2|: |k:end`,
 		},
 		{
+			// The same rule as JavaScript: one failed look-ahead per
+			// line, so the work stays linear in the line length.
+			name: "no regex after an unclosed one",
+			line: `/[ /x/`,
+			want: `:/[ /x/`,
+		},
+		{
 			// A literal ends an operand, so a slash after one divides.
 			// This compared the byte the previous token began with,
 			// which for a string is its opening quote, so no literal
@@ -126,6 +134,20 @@ func TestScanRuby(t *testing.T) {
 			name: "append is not a heredoc",
 			line: `  rows << row`,
 			want: `:  rows << row`,
+		},
+		{
+			// A tag past the limit is not carried. Diff compares the
+			// carry on each context row, so a long tag would make
+			// each row cost its length.
+			name: "a tag past the limit is not a heredoc",
+			line: "x = <<~" + strings.Repeat("A", maxHeredocTag+1),
+			want: ":x = <<~|n:" + strings.Repeat("A", maxHeredocTag+1),
+		},
+		{
+			name: "a tag at the limit is a heredoc",
+			line: "x = <<~" + strings.Repeat("A", maxHeredocTag),
+			want: ":x = |s:<<~" + strings.Repeat("A", maxHeredocTag),
+			out:  heredocState("<<~" + strings.Repeat("A", maxHeredocTag)),
 		},
 		{
 			name: "a heredoc opens and the line goes on",

@@ -45,6 +45,11 @@ func scanJS(st state, line string) ([]token, state) {
 	// This was the byte the previous token began with, which a literal
 	// could never satisfy -- see closesOperand.
 	var operand bool
+	// Whether a regex look-ahead already failed on this line. It read
+	// to the end of the line, so every later slash divides. Another
+	// look-ahead would read the same bytes again, and a line of `/[`
+	// repeated would cost the square of its length.
+	var noRegex bool
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
@@ -84,7 +89,7 @@ func scanJS(st state, line string) ([]token, state) {
 			i += 2
 			st = stateBlockComment
 			operand = false
-		case c == '/' && !operand:
+		case c == '/' && !operand && !noRegex:
 			// A regex, if it closes on this line. One that does not is
 			// a division whose right side is still being typed.
 			if n := scanRegex(line[i:]); n > 0 {
@@ -93,6 +98,7 @@ func scanJS(st state, line string) ([]token, state) {
 				operand = true
 				break
 			}
+			noRegex = true
 			ts.add("", line[i:i+1])
 			i++
 			operand = false

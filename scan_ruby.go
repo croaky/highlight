@@ -46,6 +46,11 @@ func scanRuby(st state, line string) ([]token, state) {
 	// scan of the remainder whose state was thrown away, which is how a
 	// second opener on one line was lost.
 	var pending state
+	// Whether a regex look-ahead already failed on this line. It read
+	// to the end of the line, so every later slash divides. Another
+	// look-ahead would read the same bytes again, and a line of `/[`
+	// repeated would cost the square of its length.
+	var noRegex bool
 line:
 	for i := 0; i < len(line); {
 		switch st.kind {
@@ -103,7 +108,7 @@ line:
 				st = stateRawString
 			}
 			operand = true
-		case c == '/' && !operand:
+		case c == '/' && !operand && !noRegex:
 			if n := scanRegex(line[i:]); n > 0 {
 				ts.add(stringClass, line[i:i+n])
 				i += n
@@ -111,6 +116,7 @@ line:
 				break
 			}
 			// A division whose right side is still being typed.
+			noRegex = true
 			ts.add("", line[i:i+1])
 			i++
 			operand = false
@@ -229,8 +235,15 @@ func isHeredocStart(s string) bool {
 	return heredocTagLen(s) > 0
 }
 
+// maxHeredocTag is the longest tag a heredoc opener can have. The tag
+// is carried in state, and Diff compares the old and new carries on each
+// context row. A tag of any length would make each row cost its length.
+// Real tags such as SQL, EOS and MIGRATION are far below the limit.
+const maxHeredocTag = 64
+
 // heredocTagLen is the length of the heredoc opener at the start of s,
-// or 0 if there is not one.
+// or 0 if there is not one. A tag longer than maxHeredocTag is not one,
+// and << then reads as the append operator.
 func heredocTagLen(s string) int {
 	if !strings.HasPrefix(s, "<<") {
 		return 0
@@ -248,7 +261,7 @@ func heredocTagLen(s string) int {
 	for i < len(s) && (s[i] == '_' || (s[i] >= 'A' && s[i] <= 'Z') || isDigit(s[i])) {
 		i++
 	}
-	if i == start {
+	if i == start || i-start > maxHeredocTag {
 		return 0
 	}
 	if quote != 0 {

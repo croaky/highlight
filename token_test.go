@@ -50,6 +50,34 @@ func TestScannersAreLossless(t *testing.T) {
 	}
 }
 
+// TestLongLines scans lines built to make a look-ahead repeat. Each
+// scanner must do work linear in the line length. Under -race, a linear
+// scan of these lines takes less than 100 ms. A quadratic scan takes
+// about 20 times as long, and the test check shows that time. The test
+// does not fail on a time limit, because a limit would fail on a slow
+// CI runner.
+func TestLongLines(t *testing.T) {
+	const n = 64 << 10
+	for _, tt := range []struct{ name, unit string }{
+		{"x.js", "/["},
+		{"x.js", `/\`},
+		{"x.rb", "/["},
+		{"x.rb", `/\`},
+	} {
+		t.Run(tt.name+" "+tt.unit, func(t *testing.T) {
+			is := is.New(t)
+
+			line := strings.Repeat(tt.unit, n/len(tt.unit))
+			ts, _ := scannerFor(tt.name)(stateCode, line)
+			var got strings.Builder
+			for _, tk := range ts {
+				got.WriteString(tk.text)
+			}
+			is.Eq(got.String(), line)
+		})
+	}
+}
+
 // TestScannerForNames checks the two things a caller can hand in: a
 // path, whose extension names the language, and the language itself.
 func TestScannerForNames(t *testing.T) {
