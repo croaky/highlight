@@ -63,6 +63,7 @@ func TestLongLines(t *testing.T) {
 		{"x.js", `/\`},
 		{"x.rb", "/["},
 		{"x.rb", `/\`},
+		{"x.md", "["},
 	} {
 		t.Run(tt.name+" "+tt.unit, func(t *testing.T) {
 			is := is.New(t)

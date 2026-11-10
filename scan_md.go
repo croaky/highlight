@@ -69,7 +69,13 @@ func markdownMarker(s string) int {
 // scanMarkdownInline colors the two inline spans worth having: `code`
 // and the text of a [link](url). Emphasis is left alone, since its
 // markers are also ordinary punctuation.
+//
+// noClose records a search for `]` that found none. No `]` after one
+// `[` means no `]` after any later `[`, so the scan does not search
+// again. Without it, a line of n unclosed brackets costs n²/2 byte
+// compares.
 func scanMarkdownInline(ts *tokens, s string) {
+	noClose := false
 	for i := 0; i < len(s); {
 		switch s[i] {
 		case '`':
@@ -81,7 +87,12 @@ func scanMarkdownInline(ts *tokens, s string) {
 			ts.add("", s[i:])
 			return
 		case '[':
-			if j := strings.IndexByte(s[i:], ']'); j > 0 {
+			j := -1
+			if !noClose {
+				j = strings.IndexByte(s[i:], ']')
+				noClose = j < 0
+			}
+			if j > 0 {
 				ts.add("", "[")
 				ts.add(nameClass, s[i+1:i+j])
 				ts.add("", "]")
