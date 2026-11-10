@@ -95,6 +95,24 @@ The package imports nothing outside the standard library. Tests import
 `github.com/croaky/is` for assertions, and that is the only dependency.
 Taking another is a design decision, not a step.
 
+## Scanner work bounds
+
+Source text is untrusted input, including an unfinished line. A scanner
+must always advance and must not search the same suffix at every byte.
+Bound carried state and nested work. An input-size limit at a caller
+does not replace a linear scanner.
+
+Test an ordinary line, the exact hostile shape, and the limit boundary.
+Tokens must preserve every byte in order. State any intentional color
+change on valid input; do not hide it as a performance improvement.
+Do not use a wall-clock assertion as the only work-bound regression.
+
+Compare hostile inputs at several sizes with repeated benchmarks on
+one toolchain. Record time, bytes, and allocations, and check the growth
+rate as well as one result. Keep small lossless and boundary tests on
+each push. Longer fuzz and benchmark runs need a time limit, retained
+failure inputs, and an owner before they move to a schedule.
+
 ## Tests
 
 A scanner's test is a table of one line each, in and out states
