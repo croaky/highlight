@@ -35,8 +35,7 @@ var jsNames = words(
 // belongs and divides where an operand just ended. What precedes it
 // decides, so each branch says whether what it read was a value. That is
 // the same rule a parser uses, minus the parser.
-func scanJS(st state, line string) ([]token, state) {
-	var ts tokens
+func scanJS(ts *tokens, st state, line string) state {
 	// Whether the last token ended an operand, for the slash above.
 	// False at the start of a line, which reads as "a value belongs
 	// here": a line beginning with a regex is a line beginning with a
@@ -56,7 +55,7 @@ func scanJS(st state, line string) ([]token, state) {
 			n, closed := ts.drain(stringClass, line[i:], "`")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			// A template literal is a value, so a slash after it
@@ -69,7 +68,7 @@ func scanJS(st state, line string) ([]token, state) {
 			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -83,7 +82,7 @@ func scanJS(st state, line string) ([]token, state) {
 			continue
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
 			ts.add(commentClass, line[i:])
-			return ts.done(), st
+			return st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			ts.add(commentClass, "/*")
 			i += 2
@@ -147,7 +146,7 @@ func scanJS(st state, line string) ([]token, state) {
 			operand = closesOperand(c)
 		}
 	}
-	return ts.done(), st
+	return st
 }
 
 // isJSIdentStart reports whether c can begin a name. The dollar sign

@@ -94,7 +94,7 @@ func TestScanC(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			is := is.NewRelaxed(t)
 
-			ts, out := scanC(tt.in, tt.line)
+			ts, out := new(tokens).scan(scanC, tt.in, tt.line)
 
 			is.Eq(formatTokens(ts), tt.want)
 			is.Eq(out, tt.out)

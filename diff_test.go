@@ -2,6 +2,7 @@ package highlight
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -77,12 +78,54 @@ func BenchmarkDiff(b *testing.B) {
 		fmt.Fprintf(&sb, "-\tif err := doThing(%d, \"x\"); err != nil {\n", i)
 		fmt.Fprintf(&sb, "+\tif err := doThing(%d, \"y\"); err != nil {\n", i)
 	}
-	patch := sb.String()
+	benchDiff(b, "main.go", sb.String())
+}
 
+// BenchmarkDiffSamples renders each sample as a patch: most lines are
+// context, and one line in eight is deleted and inserted again. That
+// runs every scanner under Diff, and the context rows run the old and
+// the new carry both.
+func BenchmarkDiffSamples(b *testing.B) {
+	for _, s := range readSamples(b) {
+		lines := strings.Split(strings.TrimSuffix(s.src, "\n"), "\n")
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "@@ -1,%d +1,%d @@\n", len(lines), len(lines))
+		for i, line := range lines {
+			if i%8 == 0 {
+				fmt.Fprintf(&sb, "-%s\n+%s\n", line, line)
+				continue
+			}
+			fmt.Fprintf(&sb, " %s\n", line)
+		}
+		patch := sb.String()
+		b.Run(filepath.Base(s.name), func(b *testing.B) {
+			benchDiff(b, s.name, patch)
+		})
+	}
+}
+
+// BenchmarkDiffHeredoc is a Ruby patch that opens a heredoc on the new
+// side only, with a tag of maxHeredocTag bytes, and then has many
+// context rows. The two carries differ on each row, so Diff scans each
+// row twice and compares the tags. This is the cost that the bound on
+// the tag length keeps linear.
+func BenchmarkDiffHeredoc(b *testing.B) {
+	tag := strings.Repeat("T", maxHeredocTag)
+	var sb strings.Builder
+	sb.WriteString("@@ -1,1000 +1,1001 @@\n")
+	fmt.Fprintf(&sb, "+sql = <<~%s\n", tag)
+	for i := range 1000 {
+		fmt.Fprintf(&sb, "   SELECT id, name FROM jobs WHERE id = %d\n", i)
+	}
+	benchDiff(b, "query.rb", sb.String())
+}
+
+func benchDiff(b *testing.B, name, patch string) {
 	b.ReportAllocs()
+	b.SetBytes(int64(len(patch)))
 
 	for b.Loop() {
-		Diff("main.go", patch)
+		Diff(name, patch)
 	}
 }
 
@@ -102,7 +145,12 @@ func BenchmarkDiffChange(b *testing.B) {
 		patches = append(patches, sb.String())
 	}
 
+	var n int
+	for _, p := range patches {
+		n += len(p)
+	}
 	b.ReportAllocs()
+	b.SetBytes(int64(n))
 
 	for b.Loop() {
 		for _, p := range patches {

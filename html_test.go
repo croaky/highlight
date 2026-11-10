@@ -1,7 +1,6 @@
 package highlight
 
 import (
-	"bytes"
 	"html/template"
 	"io"
 	"os"
@@ -97,7 +96,7 @@ func TestWriteEscaped(t *testing.T) {
 		"nul\x00byte",
 		"héllo → 世界",
 	} {
-		var buf bytes.Buffer
+		var buf strings.Builder
 		writeEscaped(&buf, s)
 		is.Eq(buf.String(), template.HTMLEscapeString(s))
 	}
@@ -112,25 +111,26 @@ func TestWriteEscaped(t *testing.T) {
 // Allocations are reported rather than left to -benchmem, since what
 // this emitter spends is mostly what it allocates and the flag is a
 // thing to remember.
+//
+// The source is a string before the loop starts. A conversion inside
+// the loop copies the file on each pass, and the benchmark then counts
+// an allocation that Code does not make.
 func BenchmarkCode(b *testing.B) {
-	names, err := filepath.Glob("testdata/sample.*")
-	if err != nil || len(names) == 0 {
-		b.Fatal("no samples in testdata")
+	for _, s := range readSamples(b) {
+		b.Run(filepath.Base(s.name), func(b *testing.B) {
+			benchCode(b, s.name, s.src)
+		})
 	}
-	for _, name := range names {
-		src, err := os.ReadFile(name)
-		if err != nil {
-			b.Fatal(err)
-		}
-		b.Run(filepath.Base(name), func(b *testing.B) {
-			b.ReportAllocs()
-			b.SetBytes(int64(len(src)))
+}
 
-			for b.Loop() {
-				if err := Code(io.Discard, name, string(src)); err != nil {
-					b.Fatal(err)
-				}
-			}
+// BenchmarkCodeLarge runs the emitter over each sample repeated to 64
+// KB, which is the size of a long source file on a page. The small
+// samples show the cost to start a file. This shows the cost per line.
+func BenchmarkCodeLarge(b *testing.B) {
+	for _, s := range readSamples(b) {
+		src := repeatTo(s.src, 64<<10)
+		b.Run(filepath.Base(s.name), func(b *testing.B) {
+			benchCode(b, s.name, src)
 		})
 	}
 }
@@ -143,12 +143,44 @@ func BenchmarkCodeUncolored(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	benchCode(b, "notes.unknownext", string(src))
+}
+
+func benchCode(b *testing.B, name, src string) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(src)))
 
 	for b.Loop() {
-		if err := Code(io.Discard, "notes.unknownext", string(src)); err != nil {
+		if err := Code(io.Discard, name, src); err != nil {
 			b.Fatal(err)
 		}
 	}
+}
+
+// sample is one file of testdata, read once for a benchmark.
+type sample struct{ name, src string }
+
+func readSamples(b *testing.B) []sample {
+	names, err := filepath.Glob("testdata/sample.*")
+	if err != nil || len(names) == 0 {
+		b.Fatal("no samples in testdata")
+	}
+	var out []sample
+	for _, name := range names {
+		src, err := os.ReadFile(name)
+		if err != nil {
+			b.Fatal(err)
+		}
+		out = append(out, sample{name, string(src)})
+	}
+	return out
+}
+
+// repeatTo repeats src, a newline between copies, until it is at least
+// n bytes long. Each sample ends where it started, in code, so each
+// copy scans the same as the first.
+func repeatTo(src string, n int) string {
+	src = strings.TrimSuffix(src, "\n")
+	k := n/(len(src)+1) + 1
+	return strings.TrimSuffix(strings.Repeat(src+"\n", k), "\n")
 }

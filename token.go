@@ -85,11 +85,15 @@ var (
 	stateTag          = state{kind: kindTag}
 )
 
-// scanFunc tokenizes one line, given the state the previous line
-// ended in, and returns the state this one ended in. Carrying state is
-// the whole point: a lexer restarted at every line colors the second
-// half of a raw string as code.
-type scanFunc func(st state, line string) ([]token, state)
+// scanFunc tokenizes one line into ts, given the state the previous
+// line ended in, and returns the state this one ended in. Carrying
+// state is the whole point: a lexer restarted at every line colors the
+// second half of a raw string as code.
+//
+// A scanner adds to ts and does not make its own. The tokens.scan
+// method readies ts for the line and reads the tokens after, so a
+// caller that scans a file reuses one token slice for each line.
+type scanFunc func(ts *tokens, st state, line string) state
 
 // scannerFor picks a scanner for a filename or a bare language name,
 // since the two callers know different things: a diff has a path and a
@@ -150,55 +154,65 @@ func scannerFor(name string) scanFunc {
 // feeds unclassified bytes one at a time, so a run of punctuation
 // allocated once per character and each of those copied the run so far.
 //
-// A run of one piece keeps the caller's string, which is already a slice
-// of the line and costs nothing. Only a run that grew needs a string of
-// its own, and buf is reused for the rest of the line.
+// A scanner adds the bytes of its line in order and drops none, which
+// TestScannersAreLossless checks. So the pending run is always
+// line[start:pos], and a merged token is a slice of the line, not a
+// copy. A copy of each merged run was most of what a line allocated.
 type tokens struct {
 	out   []token
-	class string
-	text  string // the pending run, while it is a single piece
-	buf   []byte // the pending run, once it is more than one
+	line  string // the line the scanner reads
+	pos   int    // the bytes of line added so far
+	start int    // where the pending run starts in line
+	class string // the class of the pending run
 }
 
 // add emits text as class, merging it into the pending run when the
 // class has not changed.
+//
+// text is the next len(text) bytes of the line in every scanner. A text
+// that is not becomes a token of its own and does not merge, so its
+// bytes still reach the output as they are.
 func (ts *tokens) add(class, text string) {
 	if text == "" {
 		return
 	}
-	if ts.text != "" || len(ts.buf) > 0 {
-		if ts.class == class {
-			if len(ts.buf) == 0 {
-				ts.buf = append(ts.buf, ts.text...)
-				ts.text = ""
-			}
-			ts.buf = append(ts.buf, text...)
-			return
-		}
+	end := ts.pos + len(text)
+	if end > len(ts.line) || ts.line[ts.pos:end] != text {
 		ts.flush()
+		ts.out = append(ts.out, token{class: class, text: text})
+		return
 	}
-	ts.class, ts.text = class, text
+	if ts.class != class {
+		ts.flush()
+		ts.class = class
+	}
+	ts.pos = end
 }
 
-// flush turns the pending run into a token. A run that never grew is
-// the caller's own string, so only one that did is copied.
+// flush turns the pending run into a token, a slice of the line.
 func (ts *tokens) flush() {
-	switch {
-	case len(ts.buf) > 0:
-		ts.out = append(ts.out, token{class: ts.class, text: string(ts.buf)})
-		ts.buf = ts.buf[:0]
-	case ts.text != "":
-		ts.out = append(ts.out, token{class: ts.class, text: ts.text})
-		ts.text = ""
+	if ts.pos > ts.start {
+		ts.out = append(ts.out, token{class: ts.class, text: ts.line[ts.start:ts.pos]})
 	}
+	ts.start = ts.pos
 }
 
-// done is the line's tokens, the pending run finished. Every scanner
-// returns through it, and nothing reads the tokens before it: a run
-// still being merged is not one to emit.
+// done is the line's tokens, the pending run finished. The scan
+// method returns through it, and nothing reads the tokens before it: a
+// run still being merged is not one to emit.
 func (ts *tokens) done() []token {
 	ts.flush()
 	return ts.out
+}
+
+// scan runs scan over line from st and returns the line's tokens and
+// the state the line ended in. It keeps the capacity of the last line's
+// token slice, so a file allocates tokens only for its longest lines.
+// The tokens stay valid until the next call.
+func (ts *tokens) scan(scan scanFunc, st state, line string) ([]token, state) {
+	*ts = tokens{out: ts.out[:0], line: line}
+	st = scan(ts, st, line)
+	return ts.done(), st
 }
 
 // drain finishes a carry: it emits s up to and including end and

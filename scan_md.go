@@ -10,8 +10,7 @@ import "strings"
 //
 // The fence is the one thing here that needs the carry, and it is the
 // one that matters: a diff inside a fenced block is not prose.
-func scanMarkdown(st state, line string) ([]token, state) {
-	var ts tokens
+func scanMarkdown(ts *tokens, st state, line string) state {
 	trimmed := strings.TrimLeft(line, " \t")
 	indent := line[:len(line)-len(trimmed)]
 
@@ -19,25 +18,25 @@ func scanMarkdown(st state, line string) ([]token, state) {
 		ts.add("", indent)
 		ts.add(commentClass, trimmed)
 		if st == stateFence {
-			return ts.done(), stateCode
+			return stateCode
 		}
-		return ts.done(), stateFence
+		return stateFence
 	}
 	if st == stateFence {
 		// Code, in a language we were not told. Uncolored is honest.
 		ts.add("", line)
-		return ts.done(), st
+		return st
 	}
 
 	switch {
 	case strings.HasPrefix(trimmed, "#"):
 		ts.add("", indent)
 		ts.add(keywordClass, trimmed)
-		return ts.done(), st
+		return st
 	case strings.HasPrefix(trimmed, ">"):
 		ts.add("", indent)
 		ts.add(commentClass, trimmed)
-		return ts.done(), st
+		return st
 	}
 
 	ts.add("", indent)
@@ -46,8 +45,8 @@ func scanMarkdown(st state, line string) ([]token, state) {
 		ts.add(keywordClass, rest[:n])
 		rest = rest[n:]
 	}
-	scanMarkdownInline(&ts, rest)
-	return ts.done(), st
+	scanMarkdownInline(ts, rest)
+	return st
 }
 
 // markdownMarker returns the length of a leading list marker: a bullet

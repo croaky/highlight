@@ -25,15 +25,14 @@ var sqlKeywords = words(
 // /* */ comment both span lines, which is the whole reason for the
 // carry: a query is an indented block inside a Go raw string, and a
 // migration is one statement over many lines.
-func scanSQL(st state, line string) ([]token, state) {
-	var ts tokens
+func scanSQL(ts *tokens, st state, line string) state {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateSingleQuote:
 			n, closed := ts.drain(stringClass, line[i:], "'")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -41,7 +40,7 @@ func scanSQL(st state, line string) ([]token, state) {
 			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -51,7 +50,7 @@ func scanSQL(st state, line string) ([]token, state) {
 		switch {
 		case c == '-' && i+1 < len(line) && line[i+1] == '-':
 			ts.add(commentClass, line[i:])
-			return ts.done(), st
+			return st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			ts.add(commentClass, "/*")
 			i += 2
@@ -82,5 +81,5 @@ func scanSQL(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts.done(), st
+	return st
 }

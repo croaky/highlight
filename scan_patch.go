@@ -22,8 +22,7 @@ var patchMeta = []string{
 // A deleted line that starts with "-- " reads as a file header. Telling
 // them apart needs the hunk's line counts, which a one-line scan does
 // not have, so that line is colored as a header.
-func scanPatch(st state, line string) ([]token, state) {
-	var ts tokens
+func scanPatch(ts *tokens, st state, line string) state {
 	switch {
 	case strings.HasPrefix(line, "@@"):
 		ts.add(nameClass, line)
@@ -40,7 +39,7 @@ func scanPatch(st state, line string) ([]token, state) {
 	default:
 		ts.add("", line)
 	}
-	return ts.done(), st
+	return st
 }
 
 func hasAnyPrefix(s string, prefixes []string) bool {

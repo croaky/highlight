@@ -14,8 +14,7 @@ import "strings"
 //
 // The comment is the one thing that carries, and the one that matters:
 // a stylesheet worth reading is more comment than rule.
-func scanCSS(st state, line string) ([]token, state) {
-	var ts tokens
+func scanCSS(ts *tokens, st state, line string) state {
 	// Whether what follows, up to the next semicolon, is a value. The
 	// same words appear on both sides of a colon -- a value's are
 	// values, and coloring them as the selectors they are elsewhere
@@ -26,7 +25,7 @@ func scanCSS(st state, line string) ([]token, state) {
 			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -108,7 +107,7 @@ func scanCSS(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts.done(), st
+	return st
 }
 
 // isPseudo reports whether s begins with the colon of a pseudo-class or

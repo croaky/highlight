@@ -92,7 +92,7 @@ func TestScanLua(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			is := is.NewRelaxed(t)
 
-			ts, out := scanLua(tt.in, tt.line)
+			ts, out := new(tokens).scan(scanLua, tt.in, tt.line)
 
 			is.Eq(formatTokens(ts), tt.want)
 			is.Eq(out, tt.out)

@@ -63,7 +63,7 @@ func TestScanHML(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			is := is.NewRelaxed(t)
 
-			ts, out := scanHML(stateCode, tt.line)
+			ts, out := new(tokens).scan(scanHML, stateCode, tt.line)
 
 			is.Eq(formatTokens(ts), tt.want)
 			// Nothing in hml spans lines, so the state never moves.

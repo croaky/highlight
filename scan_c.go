@@ -27,18 +27,17 @@ var cKeywords = words(
 // header made up, so a list would be right in one file and wrong in
 // the next. A call is recognized by the paren after it, as everywhere
 // else here.
-func scanC(st state, line string) ([]token, state) {
-	var ts tokens
+func scanC(ts *tokens, st state, line string) state {
 	i := 0
 	if st == stateCode {
-		i = scanCDirective(&ts, line)
+		i = scanCDirective(ts, line)
 	}
 	for i < len(line) {
 		if st == stateBlockComment {
 			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -52,7 +51,7 @@ func scanC(st state, line string) ([]token, state) {
 			st = stateBlockComment
 		case strings.HasPrefix(line[i:], "//"):
 			ts.add(commentClass, line[i:])
-			return ts.done(), st
+			return st
 		case c == '"' || c == '\'':
 			n := scanQuoted(line[i:], c)
 			ts.add(stringClass, line[i:i+n])
@@ -78,7 +77,7 @@ func scanC(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts.done(), st
+	return st
 }
 
 // scanCDirective colors a leading preprocessor line and returns where

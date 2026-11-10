@@ -36,8 +36,9 @@ func TestScannersAreLossless(t *testing.T) {
 			is.NoErr(err)
 
 			var st state
+			var buf tokens
 			for line := range strings.SplitSeq(string(src), "\n") {
-				ts, next := scan(st, line)
+				ts, next := buf.scan(scan, st, line)
 				var got strings.Builder
 				for _, tk := range ts {
 					got.WriteString(tk.text)
@@ -69,12 +70,56 @@ func TestLongLines(t *testing.T) {
 			is := is.New(t)
 
 			line := strings.Repeat(tt.unit, n/len(tt.unit))
-			ts, _ := scannerFor(tt.name)(stateCode, line)
+			ts, _ := new(tokens).scan(scannerFor(tt.name), stateCode, line)
 			var got strings.Builder
 			for _, tk := range ts {
 				got.WriteString(tk.text)
 			}
 			is.Eq(got.String(), line)
+		})
+	}
+}
+
+// TestTokensMerge checks that a run of one class becomes one token
+// whose text is a slice of the line, and that a text that is not the
+// next bytes of the line still reaches the tokens as it is.
+func TestTokensMerge(t *testing.T) {
+	is := is.NewRelaxed(t)
+
+	line := "a+-b"
+	ts := tokens{line: line}
+	ts.add(nameClass, line[0:1])
+	ts.add("", line[1:2])
+	ts.add("", "-")
+	ts.add(nameClass, line[3:4])
+	is.Eq(formatTokens(ts.done()), "n:a|:+-|n:b")
+
+	ts = tokens{line: line}
+	ts.add("", "a")
+	ts.add("", "x")
+	ts.add("", "y")
+	is.Eq(formatTokens(ts.done()), ":a|:x|:y")
+}
+
+// BenchmarkLongLines runs Code over the lines of TestLongLines, and
+// over long lines of normal code in the same languages. The first kind
+// is the input that the look-ahead bounds keep linear. The second kind
+// shows the cost of those bounds on a line that needs none of them.
+func BenchmarkLongLines(b *testing.B) {
+	const n = 64 << 10
+	for _, tt := range []struct{ bench, name, unit string }{
+		{"js_open_class", "x.js", "/["},
+		{"js_open_escape", "x.js", `/\`},
+		{"js_code", "x.js", "x = a / b; y = s.replace(/[a-z]+/g, \"\"); "},
+		{"rb_open_class", "x.rb", "/["},
+		{"rb_open_escape", "x.rb", `/\`},
+		{"rb_code", "x.rb", "x = a / b; y = s.gsub(/[a-z]+/, \"\"); "},
+		{"md_open_bracket", "x.md", "["},
+		{"md_links", "x.md", "see [the docs](https://example.com) and `code`, "},
+	} {
+		line := strings.Repeat(tt.unit, n/len(tt.unit))
+		b.Run(tt.bench, func(b *testing.B) {
+			benchCode(b, tt.name, line)
 		})
 	}
 }

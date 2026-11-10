@@ -13,13 +13,12 @@ var hmlKeywords = words(
 // indentation is its structure. Nothing here spans lines: a filter
 // block's body is delimited by indentation rather than by a token, so
 // there is no carry state to keep.
-func scanHML(st state, line string) ([]token, state) {
-	var ts tokens
+func scanHML(ts *tokens, st state, line string) state {
 	trimmed := strings.TrimLeft(line, " \t")
 	indent := line[:len(line)-len(trimmed)]
 	ts.add("", indent)
 	if trimmed == "" {
-		return ts.done(), st
+		return st
 	}
 
 	switch {
@@ -27,16 +26,16 @@ func scanHML(st state, line string) ([]token, state) {
 		ts.add(commentClass, trimmed)
 	case trimmed[0] == '-' || trimmed[0] == '=':
 		ts.add(keywordClass, trimmed[:1])
-		scanHMLExpr(&ts, trimmed[1:])
+		scanHMLExpr(ts, trimmed[1:])
 	case trimmed[0] == ':':
 		// A filter block header: :javascript, :css.
 		ts.add(keywordClass, trimmed)
 	case trimmed[0] == '%' || trimmed[0] == '.' || trimmed[0] == '#':
-		scanHMLTag(&ts, trimmed)
+		scanHMLTag(ts, trimmed)
 	default:
-		scanHMLText(&ts, trimmed)
+		scanHMLText(ts, trimmed)
 	}
-	return ts.done(), st
+	return st
 }
 
 // scanHMLTag colors a tag line: %tag as a keyword, its classes and id

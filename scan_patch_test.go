@@ -28,7 +28,7 @@ func TestScanPatch(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			is := is.New(t)
-			ts, out := scanPatch(stateCode, tt.line)
+			ts, out := new(tokens).scan(scanPatch, stateCode, tt.line)
 			is.Eq(formatTokens(ts), tt.want)
 			is.Eq(out, stateCode)
 		})

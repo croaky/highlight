@@ -28,8 +28,7 @@ var rubyKeywords = words(
 // Interpolation stays inside its string. #{...} is code, and coloring it
 // would mean a scan within a scan; the whole run is one color, the way
 // the shell scanner treats $VAR.
-func scanRuby(st state, line string) ([]token, state) {
-	var ts tokens
+func scanRuby(ts *tokens, st state, line string) state {
 	// Whether the last token ended an operand, for the slash that is
 	// either a regex or a division -- the same ambiguity JavaScript has,
 	// and the same rule. False at the start of a line, which reads as "a
@@ -195,9 +194,9 @@ line:
 	// once is `x = <<~SQL; y = %w[a`, where whichever is carried the
 	// other is lost.
 	if pending.kind == kindHeredoc {
-		return ts.done(), pending
+		return pending
 	}
-	return ts.done(), st
+	return st
 }
 
 // rubyIdentLen is the length of the name at the start of s, including a

@@ -36,15 +36,14 @@ var luaNames = words(
 //
 // A quoted string is not a carry: a newline inside one is an error, and
 // a long string is what Lua offers instead.
-func scanLua(st state, line string) ([]token, state) {
-	var ts tokens
+func scanLua(ts *tokens, st state, line string) state {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
 			n, closed := ts.drain(stringClass, line[i:], "]]")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -52,7 +51,7 @@ func scanLua(st state, line string) ([]token, state) {
 			n, closed := ts.drain(commentClass, line[i:], "]]")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -67,7 +66,7 @@ func scanLua(st state, line string) ([]token, state) {
 			st = stateBlockComment
 		case strings.HasPrefix(line[i:], "--"):
 			ts.add(commentClass, line[i:])
-			return ts.done(), st
+			return st
 		case strings.HasPrefix(line[i:], "[["):
 			ts.add(stringClass, line[i:i+2])
 			i += 2
@@ -107,5 +106,5 @@ func scanLua(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts.done(), st
+	return st
 }

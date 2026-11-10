@@ -15,8 +15,7 @@ var shKeywords = words(
 // scanShell tokenizes one line of sh. Both quote kinds span lines, so
 // both are carry states. $VAR inside a double-quoted string stays part
 // of the string: the whole run is one color anyway.
-func scanShell(st state, line string) ([]token, state) {
-	var ts tokens
+func scanShell(ts *tokens, st state, line string) state {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateSingleQuote:
@@ -27,7 +26,7 @@ func scanShell(st state, line string) ([]token, state) {
 				continue
 			}
 			ts.add(stringClass, line[i:])
-			return ts.done(), st
+			return st
 		case stateDoubleQuote:
 			if n, closed := scanDelimited(line[i:], '"'); closed {
 				ts.add(stringClass, line[i:i+n])
@@ -36,7 +35,7 @@ func scanShell(st state, line string) ([]token, state) {
 				continue
 			}
 			ts.add(stringClass, line[i:])
-			return ts.done(), st
+			return st
 		}
 
 		c := line[i]
@@ -45,7 +44,7 @@ func scanShell(st state, line string) ([]token, state) {
 			// A # elsewhere is part of a word: ${x#y}, a fragment in
 			// a URL.
 			ts.add(commentClass, line[i:])
-			return ts.done(), st
+			return st
 		case c == '\'':
 			ts.add(stringClass, "'")
 			i++
@@ -84,5 +83,5 @@ func scanShell(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts.done(), st
+	return st
 }

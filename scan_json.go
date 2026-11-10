@@ -15,14 +15,13 @@ var jsonWords = words("true", "false", "null")
 // be worse than reading a dialect nothing here has to parse. A string
 // cannot span lines in either dialect, so the block comment is the
 // only carry.
-func scanJSON(st state, line string) ([]token, state) {
-	var ts tokens
+func scanJSON(ts *tokens, st state, line string) state {
 	for i := 0; i < len(line); {
 		if st == stateBlockComment {
 			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -32,7 +31,7 @@ func scanJSON(st state, line string) ([]token, state) {
 		switch {
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
 			ts.add(commentClass, line[i:])
-			return ts.done(), st
+			return st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			st = stateBlockComment
 			ts.add(commentClass, line[i:i+2])
@@ -60,7 +59,7 @@ func scanJSON(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts.done(), st
+	return st
 }
 
 // jsonStringClass is n for a key and s for a value, told apart by what

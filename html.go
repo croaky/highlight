@@ -1,7 +1,6 @@
 package highlight
 
 import (
-	"bytes"
 	"html/template"
 	"io"
 	"strings"
@@ -17,28 +16,40 @@ import (
 func Code(w io.Writer, name, src string) error {
 	scan := scannerFor(name)
 
-	var buf bytes.Buffer
-	buf.Grow(len(src) + len(src)/4)
+	var buf strings.Builder
 	if scan == nil {
 		// No scanner means no color and no carry, so the lines need
 		// no split. One pass escapes the whole source, and the
 		// newlines come through as they are.
+		buf.Grow(len(src) + len(src)/4)
 		writeEscaped(&buf, src)
-		_, err := w.Write(buf.Bytes())
+		_, err := io.WriteString(w, buf.String())
 		return err
 	}
+	buf.Grow(codeGrowth * len(src))
 	var st state
+	var ts tokens
 	first := true
 	for line := range strings.SplitSeq(src, "\n") {
 		if !first {
 			buf.WriteByte('\n')
 		}
 		first = false
-		writeContent(&buf, scan, &st, line)
+		writeContent(&buf, &ts, scan, &st, line)
 	}
-	_, err := w.Write(buf.Bytes())
+	_, err := io.WriteString(w, buf.String())
 	return err
 }
+
+// codeGrowth and diffGrowth size the output buffer as a multiple of
+// the input. The class spans make colored output about 2.5 times the
+// size of the source, and the row spans make a diff about 3.5 times the
+// size of the patch. A buffer of the right size from the start grows
+// once, not two or three times.
+const (
+	codeGrowth = 3
+	diffGrowth = 4
+)
 
 // The diff classes, each named once, as the token classes are in
 // token.go. Diff wraps a patch in diffClass and each row in one of the
@@ -68,10 +79,11 @@ const (
 func Diff(filename, patch string) template.HTML {
 	scan := scannerFor(filename)
 
-	var buf bytes.Buffer
-	buf.Grow(len(patch) + len(patch)/4)
+	var buf strings.Builder
+	buf.Grow(diffGrowth * len(patch))
 	buf.WriteString(`<span class=` + diffClass + `>`)
 	var oldSt, newSt state
+	var ts tokens
 	for line := range strings.SplitSeq(patch, "\n") {
 		if line == "" {
 			// Trailing empty entry from Split on a patch that ends
@@ -90,11 +102,11 @@ func Diff(filename, patch string) template.HTML {
 			buf.WriteString(`</span>`)
 		case '+':
 			buf.WriteString(`<span class=` + insertedClass + `>+`)
-			writeContent(&buf, scan, &newSt, line[1:])
+			writeContent(&buf, &ts, scan, &newSt, line[1:])
 			buf.WriteString(`</span>`)
 		case '-':
 			buf.WriteString(`<span class=` + deletedClass + `>-`)
-			writeContent(&buf, scan, &oldSt, line[1:])
+			writeContent(&buf, &ts, scan, &oldSt, line[1:])
 			buf.WriteString(`</span>`)
 		default:
 			// Context line, usually " <content>". It belongs to both
@@ -108,9 +120,9 @@ func Diff(filename, patch string) template.HTML {
 			buf.WriteString(prefix)
 			same := oldSt == newSt
 			if !same && scan != nil {
-				_, oldSt = scan(oldSt, content)
+				_, oldSt = ts.scan(scan, oldSt, content)
 			}
-			writeContent(&buf, scan, &newSt, content)
+			writeContent(&buf, &ts, scan, &newSt, content)
 			if same {
 				oldSt = newSt
 			}
@@ -122,21 +134,22 @@ func Diff(filename, patch string) template.HTML {
 }
 
 // writeContent colors one line's content, advancing st. No scanner
-// means no color, not no line.
-func writeContent(buf *bytes.Buffer, scan scanFunc, st *state, content string) {
+// means no color, not no line. ts holds the tokens of one line at a
+// time, and the caller passes the same ts for each line.
+func writeContent(buf *strings.Builder, ts *tokens, scan scanFunc, st *state, content string) {
 	if scan == nil {
 		writeEscaped(buf, content)
 		return
 	}
-	ts, next := scan(*st, content)
+	out, next := ts.scan(scan, *st, content)
 	*st = next
-	writeTokens(buf, ts)
+	writeTokens(buf, out)
 }
 
 // writeTokens writes tokens as HTML-escaped text, each colored run in a
 // class span. The source may be a file a stranger pushed, so every byte
 // of it is escaped.
-func writeTokens(buf *bytes.Buffer, ts []token) {
+func writeTokens(buf *strings.Builder, ts []token) {
 	for _, t := range ts {
 		if t.class == "" {
 			writeEscaped(buf, t.text)
@@ -157,7 +170,7 @@ func writeTokens(buf *bytes.Buffer, ts []token) {
 // The replacements are the ones html/template writes, byte for byte,
 // since the tests spell out expected HTML and the package documents
 // this escaping.
-func writeEscaped(buf *bytes.Buffer, s string) {
+func writeEscaped(buf *strings.Builder, s string) {
 	start := 0
 	for i := 0; i < len(s); i++ {
 		var repl string

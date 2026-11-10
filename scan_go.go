@@ -24,15 +24,14 @@ var goNames = words(
 // scanGo tokenizes one line of Go, carrying the two states that outlive
 // a line: a raw string and a block comment. Those are the tokens a
 // per-line lexer colors as code, which is why this exists.
-func scanGo(st state, line string) ([]token, state) {
-	var ts tokens
+func scanGo(ts *tokens, st state, line string) state {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateRawString:
 			n, closed := ts.drain(stringClass, line[i:], "`")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -40,7 +39,7 @@ func scanGo(st state, line string) ([]token, state) {
 			n, closed := ts.drain(commentClass, line[i:], "*/")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
@@ -50,7 +49,7 @@ func scanGo(st state, line string) ([]token, state) {
 		switch {
 		case c == '/' && i+1 < len(line) && line[i+1] == '/':
 			ts.add(commentClass, line[i:])
-			return ts.done(), st
+			return st
 		case c == '/' && i+1 < len(line) && line[i+1] == '*':
 			ts.add(commentClass, "/*")
 			i += 2
@@ -88,5 +87,5 @@ func scanGo(st state, line string) ([]token, state) {
 			i++
 		}
 	}
-	return ts.done(), st
+	return st
 }

@@ -18,20 +18,19 @@ import "strings"
 // coloring JavaScript as if it were markup, is worse than not coloring
 // it. An entity is text for the same reason nothing here invents a
 // sixth class for it.
-func scanHTML(st state, line string) ([]token, state) {
-	var ts tokens
+func scanHTML(ts *tokens, st state, line string) state {
 	for i := 0; i < len(line); {
 		switch st {
 		case stateBlockComment:
 			n, closed := ts.drain(commentClass, line[i:], "-->")
 			i += n
 			if !closed {
-				return ts.done(), st
+				return st
 			}
 			st = stateCode
 			continue
 		case stateTag:
-			n, done := scanTagPart(&ts, line[i:])
+			n, done := scanTagPart(ts, line[i:])
 			i += n
 			if done {
 				st = stateCode
@@ -66,13 +65,13 @@ func scanHTML(st state, line string) ([]token, state) {
 			j := strings.IndexByte(line[i+1:], '<')
 			if j < 0 {
 				ts.add("", line[i:])
-				return ts.done(), st
+				return st
 			}
 			ts.add("", line[i:i+j+1])
 			i += j + 1
 		}
 	}
-	return ts.done(), st
+	return st
 }
 
 // scanTagPart reads one piece of the inside of a tag: an attribute, a
